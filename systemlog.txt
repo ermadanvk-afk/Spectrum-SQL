@@ -1,0 +1,12 @@
+[RETRY 1] Timestamp: 2026-06-30 14:45:59
+Query: list description wise item and their price
+Error: Database schema error: ('42S02', "[42S02] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid object name 'items'. (208) (SQLExecDirectW)")
+------------------------------------------------------------
+[2026-06-30 14:47:34] Query: list description wise item and their price
+Top 20 Initial: Purchase.vwaiPurchaseOrderItemDetail, Purchase.vwaiQuotationItemDetail, Purchase.vwaiItemMaster, Purchase.vwaiPurchaseOrderItemTaxDetail, masterdata.mGroupMaster, Purchase.RevisedQuotationOtherChargesDetail, Purchase.vwaiRFQMain, Purchase.vwaiQuotationItemTaxDetail, Purchase.POOtherChargeDetail, masterdata.mCostCenterMaster, Purchase.RevisedQuotationOtherChargeDetail, Inventory.IndentItemDetail, Purchase.CSQuotationDetail, Purchase.POAmendmentOtherChargeDetail, masterdata.mStateMaster, Purchase.QuotationOtherChargeDetail, Purchase.POItemOtherChargeDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.QuotationItemOtherChargeDetail, masterdata.mCountryMaster
+Top 8 Final:   Purchase.vwaiQuotationItemDetail, Purchase.vwaiPurchaseOrderItemDetail, Purchase.QuotationOtherChargeDetail, Purchase.CSQuotationDetail, Purchase.RevisedQuotationOtherChargesDetail, Purchase.vwaiItemMaster, Purchase.RevisedQuotationOtherChargeDetail, Purchase.POOtherChargeDetail
+------------------------------------------------------------
+[2026-06-30 14:48:46] Query: list description wise item and their price
+Top 20 Initial: Purchase.vwaiPurchaseOrderItemDetail, Purchase.vwaiQuotationItemDetail, Purchase.vwaiItemMaster, Purchase.vwaiPurchaseOrderItemTaxDetail, masterdata.mGroupMaster, Purchase.RevisedQuotationOtherChargesDetail, Purchase.vwaiRFQMain, Purchase.vwaiQuotationItemTaxDetail, Purchase.POOtherChargeDetail, masterdata.mCostCenterMaster, Purchase.RevisedQuotationOtherChargeDetail, Inventory.IndentItemDetail, Purchase.CSQuotationDetail, Purchase.POAmendmentOtherChargeDetail, masterdata.mStateMaster, Purchase.QuotationOtherChargeDetail, Purchase.POItemOtherChargeDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.QuotationItemOtherChargeDetail, masterdata.mCountryMaster
+Top 8 Final:   Purchase.vwaiQuotationItemDetail, Purchase.vwaiPurchaseOrderItemDetail, Purchase.QuotationOtherChargeDetail, Purchase.CSQuotationDetail, Purchase.RevisedQuotationOtherChargesDetail, Purchase.vwaiItemMaster, Purchase.RevisedQuotationOtherChargeDetail, Purchase.POOtherChargeDetail
+------------------------------------------------------------

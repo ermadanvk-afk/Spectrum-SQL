@@ -1,0 +1,120 @@
+import os
+import re
+import json
+import pandas as pd
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
+
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(env_path)
+_api_key = os.getenv("GEMINI_API_KEY") # reusing the same key from sql_gen.py
+client = AsyncOpenAI(
+  base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+  api_key=_api_key,
+  timeout=120.0
+)
+
+
+
+async def generate_analytical_summary(df: pd.DataFrame, user_query: str):
+    """
+    Generates pandas code, executes it, and summarizes the output.
+    Returns a dictionary with the results.
+    """
+    sample_rows = df.head(2).to_dict(orient="records")
+    dtypes_str = str(df.dtypes)
+    
+    code_system_prompt = (
+        "You are a senior data analyst examining procurement data. Your goal is to write advanced pandas code for DataFrame `df` to extract profound, compressed insights. "
+        "If the user asks a specific question, fulfill that requirement as the very first analytical point. "
+        "When generating general analytics, limit yourself to a maximum of 5 highly synthesized points, utilizing complex groupby and aggregate functions rather than trivial facts. "
+        "If your analysis involves ranking or top-k selection, never extract more than 3 items per category. "
+        "CRITICAL: Never dump raw rows, full columns, or large lists into the dictionary. Only store highly compressed, aggregated metrics and top 2 if required. "
+        "Ensure the final output is saved as a dictionary in a variable named `result_str`. "
+        "Do not use print() or read CSVs. Output only the pure ```python block without surrounding text."
+        "dataframe is preloaded with name 'df'"
+        "STRICT RULE : When writing the code, ensure the entire script is completed in under 40 lines and strictly contains zero comments. "
+    )
+    
+    code_user_prompt = (
+        f"DataFrame dtypes:\n{dtypes_str}\n\n"
+        f"Sample Rows (up to 4):\n{sample_rows}\n\n"
+        "Generate the python code now."
+    )
+    
+
+    try:
+        code_response = await client.chat.completions.create(
+            model="gemini-2.5-flash",
+            messages=[
+                {"role": "system", "content": code_system_prompt},
+                {"role": "user", "content": code_user_prompt}
+            ],
+            max_tokens=2000,
+            temperature=0
+        )
+        
+        full_content = code_response.choices[0].message.content
+        code_usage = code_response.usage.total_tokens if code_response.usage else 0
+        print(f"\n[ANALYTICS] Pandas Code Generated (Tokens: {code_usage}):\n{full_content}\n")
+                
+        sql_match = re.search(r"```(?:python)?\s*(.*?)\s*```", full_content, re.DOTALL | re.IGNORECASE)
+        if sql_match:
+            pandas_code = sql_match.group(1).strip()
+        else:
+            pandas_code = full_content.replace('```', '').strip()
+            if pandas_code.lower().startswith('python'):
+                pandas_code = pandas_code[6:].strip()
+        
+        local_scope = {'df': df, 'pd': pd}
+        try:
+            exec(pandas_code, {}, local_scope)
+            result_val = local_scope.get('result_str', "No result variable 'result_str' was populated by the generated code.")
+        except Exception as e:
+            result_val = f"Execution Error: {str(e)}"
+            
+        result_str_output = str(result_val)
+        if len(result_str_output) > 2000:
+            result_str_output = result_str_output[:2000] + "\n... [DATA TRUNCATED DUE TO EXCESSIVE LENGTH]"
+        
+        summary_system_prompt = (
+            "You are a procurement data analyst. use the raw data and draw useful insights and predictions "
+            "give only summary in 4 to 5 short and concise points. No need for any greeting"
+            "Highlight the most vital points concisely and clearly. Don't sound technical at any point"
+        )
+        
+        summary_user_prompt = (
+            f"Analysis Output:\n{result_str_output}\n\n"
+            "Provide the short and concise predictive and analytical summary. Do not include anything else."
+        )
+        
+        summary_response = await client.chat.completions.create(
+            model="gemini-2.5-flash",
+            messages=[
+                {"role": "system", "content": summary_system_prompt},
+                {"role": "user", "content": summary_user_prompt}
+            ],
+            temperature=0.2,
+            max_tokens=2000
+        )
+        
+        summary_text = summary_response.choices[0].message.content
+        summary_usage = summary_response.usage.total_tokens if summary_response.usage else 0
+        total_usage = code_usage + summary_usage
+        
+        print(f"\n[ANALYTICS] Summary Generated (Tokens: {summary_usage} | Total: {total_usage}):\n{summary_text}\n")
+        
+        return {
+            "status": "success",
+            "type": "done",
+            "code": full_content,
+            "summary": summary_text,
+            "tokenUsage": total_usage
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "type": "error",
+            "content": str(e)
+        }

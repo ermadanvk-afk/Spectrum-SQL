@@ -1,0 +1,18 @@
+{
+  "expense": {
+    "tables": [
+      "vwaipurchaseordermain",
+      "vwaipurchaseorderitemdetail",
+      "vwaiquotationmain"
+    ],
+    "boost_score": 10
+  },
+  "expensive": {
+    "tables": [
+      "vwaipurchaseordermain",
+      "vwaipurchaseorderitemdetail",
+      "vwaiquotationmain"
+    ],
+    "boost_score": 10
+  }
+}

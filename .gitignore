@@ -1,0 +1,10 @@
+# secret keys
+.env
+*.env
+
+# environments
+myenv/
+
+# python artifacts
+__pycache__/
+*.pyc

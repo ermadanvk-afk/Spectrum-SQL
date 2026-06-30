@@ -1,0 +1,15 @@
+fastapi
+FlagEmbedding
+nltk
+numpy
+openai
+pandas
+pydantic
+pyodbc
+python-dotenv
+qdrant-client
+requests
+sqlfluff
+torch
+transformers
+uvicorn
