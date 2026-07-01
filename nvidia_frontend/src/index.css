@@ -672,8 +672,28 @@ input:checked + .slider:before {
 .summary-content {
   background: #2a2a2a;
   color: #e5e5e5;
-  white-space: pre-wrap;
   padding-bottom: 36px; /* Extra padding to prevent overlap with token counter */
+}
+
+.summary-content strong {
+  font-weight: 700;
+  color: #fff;
+}
+
+.summary-content ul,
+.summary-content ol {
+  padding-left: 20px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.summary-content li {
+  margin-bottom: 4px;
+}
+
+.summary-content p {
+  margin-top: 0;
+  margin-bottom: 8px;
 }
 
 .spin-icon {

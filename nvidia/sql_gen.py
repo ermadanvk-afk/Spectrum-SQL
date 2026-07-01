@@ -24,7 +24,7 @@ class OpenAIChatWrapper:
         self.messages.append({"role": "user", "content": prompt})
         
         response = await self.client.chat.completions.create(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             messages=self.messages,
             max_tokens=2000,
             # extra_body={"reasoning": {"enabled": True}},

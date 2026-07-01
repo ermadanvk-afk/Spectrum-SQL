@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Loader2, Code2, Sparkles, TerminalSquare } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical }) => {
   const [status, setStatus] = useState(initialAnalysis ? 'done' : (isHistorical ? 'idle' : 'generating_code'));
@@ -90,7 +91,7 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical 
           <span>Analytical Summary</span>
         </div>
         <div className="analysis-content summary-content">
-          {summary || <span style={{opacity: 0.5}}>Generating summary...</span>}
+          {summary ? <ReactMarkdown>{summary}</ReactMarkdown> : <span style={{opacity: 0.5}}>Generating summary...</span>}
         </div>
         {tokenUsage > 0 && (
           <div style={{
