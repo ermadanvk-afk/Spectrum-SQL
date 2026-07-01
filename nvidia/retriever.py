@@ -18,7 +18,15 @@ except LookupError:
 
 lemmatizer = WordNetLemmatizer()
 
-DB_PATH = "qdrant_db"
+# Store the Qdrant DB locally in the project root directory
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_qdrant_db")
+
+_qdrant_client = None
+def get_qdrant_client():
+    global _qdrant_client
+    if _qdrant_client is None:
+        _qdrant_client = QdrantClient(path=DB_PATH)
+    return _qdrant_client
 
 def get_table_boosts(query: str) -> dict:
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -54,7 +62,7 @@ def get_table_boosts(query: str) -> dict:
 
 def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
     """Internal function to fetch chunks using Fast Hybrid Search (Dense + Sparse RRF)."""
-    client = QdrantClient(path=DB_PATH)
+    client = get_qdrant_client()
     
     if not client.collection_exists("schema_chunks"):
         print("Error: Collection 'schema_chunks' does not exist.")

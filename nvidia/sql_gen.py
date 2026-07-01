@@ -160,7 +160,9 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
     chat = OpenAIChatWrapper(client, messages)
     
     # Extract SQL block and explanation using regex
-    content = response_msg.content.strip()
+    content = response_msg.content if response_msg.content is not None else ""
+    content = content.strip()
+    
     sql_match = re.search(r"```sql\n?(.*?)\n?```", content, re.DOTALL)
     
     if sql_match:

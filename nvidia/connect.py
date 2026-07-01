@@ -27,7 +27,7 @@ if __name__ == "__main__":
         print(f"Attempting to connect with:\n{conn_str}\n")
         try:
             conn = get_connection(conn_str)
-            print("✅ SUCCESS! Successfully connected to the database!")
+            print("[+] SUCCESS! Successfully connected to the database!")
             close_connection(conn)
         except Exception as e:
-            print(f"❌ FAILED to connect.\nError Details: {e}")
+            print(f"[X] FAILED to connect.\nError Details: {e}")

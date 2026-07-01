@@ -1,5 +1,6 @@
 import os
 import time
+import traceback
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -151,6 +152,8 @@ async def ask_question(request_model: QueryRequest, request: Request):
         print(f"\n[NVIDIA PIPELINE] 🛑 Request aborted by client!")
         raise
     except Exception as e:
+        print(f"\n[NVIDIA PIPELINE] 💥 UNEXPECTED ERROR: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze")

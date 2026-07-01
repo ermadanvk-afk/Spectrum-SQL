@@ -14,8 +14,8 @@ from schema_chunker import (
 )
 from load_df import get_df
 
-# Store the Qdrant DB locally in the current directory
-DB_PATH = "qdrant_db"
+# Store the Qdrant DB locally in the project root directory
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_qdrant_db")
 
 def initialize_vector_store() -> QdrantClient:
     """Initializes and returns the QdrantClient."""
@@ -51,10 +51,10 @@ def store_chunks_to_vector_db() -> None:
     client = initialize_vector_store()
 
     print("Fetching data from sheets...")
-    schema_df = get_df("Sheet2")
-    rules_df = get_df("Sheet5")
+    schema_df = get_df("Sheet6")
+    rules_df = get_df("Sheet7")
     # Switched to Sheet4 to match what load_df.py uses for Sample Queries
-    queries_df = get_df("Sheet4")
+    queries_df = get_df("Sheet8")
     
     print("Building chunks...")
     schema_chunks = build_table_chunks(schema_df)

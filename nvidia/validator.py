@@ -51,6 +51,18 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                     cursor.execute("SET FMTONLY OFF")
                     close_connection(connection)
                     
+            import time
+            log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(f"[FINAL SQL] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"Query: {user_query}\n")
+                    f.write(f"Generated SQL:\n{current_sql}\n")
+                    f.write("Status: SUCCESS\n")
+                    f.write("-" * 60 + "\n")
+            except Exception as log_e:
+                print(f"Failed to log final SQL: {log_e}")
+                    
             return (True, current_sql, retry_in_tokens, retry_out_tokens)
         except Exception as e:
             if attempt < max_retries:
@@ -88,5 +100,17 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                 current_sql = sanitize_sql(current_sql)
             else:
                 pass
+                
+    import time
+    log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[FINAL SQL] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Query: {user_query}\n")
+            f.write(f"Generated SQL:\n{current_sql}\n")
+            f.write("Status: FAILED (Exceeded max retries)\n")
+            f.write("-" * 60 + "\n")
+    except Exception as log_e:
+        print(f"Failed to log final failed SQL: {log_e}")
                 
     return (False, "UNABLE_TO_GENERATE: Sorry, unable to get the required results.", retry_in_tokens, retry_out_tokens)

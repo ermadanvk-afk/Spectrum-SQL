@@ -81,3 +81,373 @@ Query: give me the manufacturing sales previous year for tata corporation
 Error: Found 1 issues while parsing string.
 Line 1, Position 1: Found unparsable section: 'The provided database schema is focused ...'
 ------------------------------------------------------------
+[2026-07-01 13:43:40] Query: list items with price and vendor
+Top 20 Initial: Purchase.POItemDetail, Finance.PurchaseBillItemDetail, Purchase.POItemScheduleDetail, Purchase.POItemLRate, masterdata.mVendorCard, Purchase.POIndentDetail, masterdata.mVendorLocationDetail, Purchase.POExpenseHead, masterdata.mItemMaster, Finance.PurchaseBillAdvanceDetail, Inventory.IndentItemDetail, Purchase.POAmendmentItemLRate, Purchase.POAmendmentItemScheduleDetail, Finance.PurchaseBillMain, Purchase.POTermsNConditionDetail, Inventory.GRNItemIndentDetail, Purchase.POMain, Finance.PurchaseBillItemSerialDetail, Purchase.POAmendmentMain, Purchase.POAmendmentIndentDetail
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POMain, Purchase.POItemDetail, Purchase.POItemLRate, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillItemDetail, Purchase.POAmendmentItemLRate
+------------------------------------------------------------
+[2026-07-01 13:47:33] Query: list all items purchased in last two month with their vendor name and rate.
+Top 20 Initial: Finance.PurchaseBillMain, masterdata.mUnitMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, masterdata.mMakeMaster, Purchase.POIndentDetail, Purchase.POItemLRate, Finance.PurchaseBillItemSerialDetail, masterdata.mCountryMaster, Inventory.GRNMain, Purchase.POExpenseHead, masterdata.mCompanyMaster, Purchase.POItemDetail, masterdata.mCategoryMaster
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemDetail, Finance.PurchaseBillMain, Purchase.POIndentDetail, Inventory.GRNMain
+------------------------------------------------------------
+[2026-07-01 13:50:36] Query: list all items purchased in last two month with their vendor name and rate.
+Top 20 Initial: Finance.PurchaseBillMain, masterdata.mUnitMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, masterdata.mMakeMaster, Purchase.POIndentDetail, Purchase.POItemLRate, Finance.PurchaseBillItemSerialDetail, masterdata.mCountryMaster, Inventory.GRNMain, Purchase.POExpenseHead, masterdata.mCompanyMaster, Purchase.POItemDetail, masterdata.mCategoryMaster
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemDetail, Finance.PurchaseBillMain, Purchase.POIndentDetail, Inventory.GRNMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 13:50:45
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Failed to connect to database: ('28000', "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456)")
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 13:50:47
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Failed to connect to database: ('28000', "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456)")
+------------------------------------------------------------
+[2026-07-01 13:52:44] Query: list all items purchased in last two month with their vendor name and rate.
+Top 20 Initial: Finance.PurchaseBillMain, masterdata.mUnitMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, masterdata.mMakeMaster, Purchase.POIndentDetail, Purchase.POItemLRate, Finance.PurchaseBillItemSerialDetail, masterdata.mCountryMaster, Inventory.GRNMain, Purchase.POExpenseHead, masterdata.mCompanyMaster, Purchase.POItemDetail, masterdata.mCategoryMaster
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemDetail, Finance.PurchaseBillMain, Purchase.POIndentDetail, Inventory.GRNMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 13:52:50
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Failed to connect to database: ('28000', "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456)")
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 13:52:52
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Failed to connect to database: ('28000', "[28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456) (SQLDriverConnect); [28000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Login failed for user 'gr_ai_user01'. (18456)")
+------------------------------------------------------------
+[2026-07-01 14:00:43] Query: list all items purchased in last two month with their vendor name and rate.
+Top 20 Initial: Finance.PurchaseBillMain, masterdata.mUnitMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, masterdata.mMakeMaster, Purchase.POIndentDetail, Purchase.POItemLRate, Finance.PurchaseBillItemSerialDetail, masterdata.mCountryMaster, Inventory.GRNMain, Purchase.POExpenseHead, masterdata.mCompanyMaster, Purchase.POItemDetail, masterdata.mCategoryMaster
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemDetail, Finance.PurchaseBillMain, Purchase.POIndentDetail, Inventory.GRNMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:00:49
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorName'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:00:51
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorName'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[2026-07-01 14:29:37] Query: list all items purchased in last two month with their vendor name and rate.
+Top 20 Initial: Finance.PurchaseBillMain, masterdata.mUnitMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, masterdata.mMakeMaster, Purchase.POIndentDetail, Purchase.POItemLRate, Finance.PurchaseBillItemSerialDetail, masterdata.mCountryMaster, Inventory.GRNMain, Purchase.POExpenseHead, masterdata.mCompanyMaster, Purchase.POItemDetail, masterdata.mCategoryMaster
+Top 8 Final:   Purchase.POExpenseHead, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemDetail, Finance.PurchaseBillMain, Purchase.POIndentDetail, Inventory.GRNMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:29:44
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorName'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:29:47
+Query: list all items purchased in last two month with their vendor name and rate.
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorName'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[2026-07-01 14:32:05] Query: list items purchased in last 2 month with their rates
+Top 20 Initial: Finance.PurchaseBillItemDetail, masterdata.mUnitMaster, Finance.PurchaseBillItemTaxDetail, masterdata.mLocationMaster, Finance.PurchaseBillMain, Security.Login, Purchase.POAmendmentMain, masterdata.mStateMaster, Purchase.POItemDetail, masterdata.mMakeMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mCountryMaster, Purchase.POExpenseHead, masterdata.mCategoryMaster, Finance.PurchaseBillItemSerialDetail, payroll.tblDivisionMaster, Purchase.POAmendmentExpenseHead, masterdata.mGroupMaster, Purchase.POAmendmentItemTaxDetail, masterdata.mItemMaster
+Top 8 Final:   Purchase.POItemDetail, Purchase.POExpenseHead, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentMain, Finance.PurchaseBillMain, masterdata.mItemMaster, Purchase.POAmendmentItemTaxDetail, Finance.PurchaseBillItemDetail
+------------------------------------------------------------
+[2026-07-01 14:32:55] Query: list items purchased in last 2 month with their price
+Top 20 Initial: Purchase.POAmendmentMain, masterdata.mUnitMaster, Finance.PurchaseBillItemDetail, masterdata.mLocationMaster, Finance.PurchaseBillMain, Security.Login, Purchase.POIndentDetail, masterdata.mStateMaster, Purchase.POItemDetail, masterdata.mMakeMaster, Purchase.POAmendmentIndentDetail, masterdata.mCountryMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mCategoryMaster, Finance.PurchaseBillItemSerialDetail, payroll.tblDivisionMaster, Finance.PurchaseBillItemTaxDetail, masterdata.mGroupMaster, Purchase.POAmendmentItemDetail, masterdata.mItemMaster
+Top 8 Final:   Purchase.POItemDetail, Purchase.POIndentDetail, Finance.PurchaseBillItemSerialDetail, Purchase.POAmendmentItemDetail, Finance.PurchaseBillItemDetail, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Purchase.POAmendmentIndentDetail
+------------------------------------------------------------
+[2026-07-01 14:36:53] Query: list 10 item names
+Top 20 Initial: Inventory.GRNItemIndentDetail, Purchase.POItemLRate, masterdata.mItemMaster, Inventory.IndentItemDetail, Finance.PurchaseBillItemDetail, Purchase.POAmendmentItemLRate, Inventory.GRNItemDetail, Purchase.POItemDetail, Finance.PurchaseBillItemSerialDetail, Inventory.IndentRequisitionItemDetail, Purchase.POIndentDetail, Inventory.IndentRequisitionItemScheduleDetail, Finance.PurchaseBillItemTaxDetail, Finance.PurchaseBillAdvanceDetail, Purchase.POAmendmentIndentDetail, Purchase.POItemScheduleDetail, Inventory.GRNIndentReserveDetail, Inventory.GRNItemTaxDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POItemTaxDetail
+Top 8 Final:   masterdata.mItemMaster, Finance.PurchaseBillItemDetail, Inventory.GRNItemDetail, Inventory.IndentRequisitionItemDetail, Purchase.POItemDetail, Inventory.IndentItemDetail, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemLRate
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:37:06
+Query: list 10 item names
+Generated SQL:
+SELECT TOP 10 ItemName
+FROM masterdata.mItemMaster;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 14:37:47] Query: give their prices at which they are bought
+Top 20 Initial: Purchase.POItemDetail, Purchase.POItemLRate, Purchase.POAmendmentItemDetail, Purchase.POExpenseHead, Purchase.POIndentDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail, Purchase.POPaymentTermsDetail, Finance.PurchaseBillItemTaxDetail, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillSummary, Purchase.POAmendmentExpenseHead, Purchase.POItemTaxDetail, GateEntry.InvGateEntryItemDetail, Inventory.GRNItemIndentDetail, Inventory.GRNItemDetail, Purchase.POAmendmentItemLRate, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POTermsNConditionDetail
+Top 8 Final:   Purchase.POItemDetail, Purchase.POItemLRate, Purchase.POAmendmentItemDetail, Purchase.POExpenseHead, Purchase.POIndentDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail, Purchase.POPaymentTermsDetail
+------------------------------------------------------------
+[2026-07-01 14:41:56] Query: give their prices at which they are bought
+Top 20 Initial: Purchase.POItemDetail, Purchase.POItemLRate, Purchase.POAmendmentItemDetail, Purchase.POExpenseHead, Purchase.POIndentDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail, Purchase.POPaymentTermsDetail, Finance.PurchaseBillItemTaxDetail, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillSummary, Purchase.POAmendmentExpenseHead, Purchase.POItemTaxDetail, GateEntry.InvGateEntryItemDetail, Inventory.GRNItemIndentDetail, Inventory.GRNItemDetail, Purchase.POAmendmentItemLRate, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POTermsNConditionDetail
+Top 8 Final:   Purchase.POItemLRate, Inventory.GRNItemDetail, Finance.PurchaseBillItemDetail, Purchase.POItemDetail, Purchase.POIndentDetail, Finance.PurchaseBillMain, Finance.PurchaseBillItemTaxDetail, Finance.PurchaseBillSummary
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:42:11
+Query: give their prices at which they are bought
+Generated SQL:
+SELECT DISTINCT TOP 10
+    mi.ItemName,
+    poid.Rate AS PurchaseRate
+FROM
+    Purchase.POItemDetail AS poid
+JOIN
+    masterdata.mItemMaster AS mi
+    ON poid.ItemNo = mi.ItemNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 14:43:46] Query: which items are purchased last month and at what price?
+Top 20 Initial: Purchase.POItemDetail, Security.Login, Finance.PurchaseBillItemDetail, masterdata.mUnitMaster, Purchase.POAmendmentItemDetail, masterdata.mLocationMaster, Purchase.POAmendmentMain, masterdata.mStateMaster, Inventory.GRNItemDetail, masterdata.mMakeMaster, Finance.PurchaseBillMain, masterdata.mCountryMaster, Finance.PurchaseBillItemTaxDetail, masterdata.mCategoryMaster, Purchase.POAmendmentPaymentTermsDetail, payroll.tblDivisionMaster, Purchase.POIndentDetail, masterdata.mGroupMaster, Purchase.POAmendmentIndentDetail, masterdata.mItemMaster
+Top 8 Final:   Purchase.POItemDetail, Purchase.POIndentDetail, Purchase.POAmendmentItemDetail, Finance.PurchaseBillItemDetail, Purchase.POAmendmentIndentDetail, Inventory.GRNItemDetail, Finance.PurchaseBillMain, Purchase.POAmendmentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:43:58
+Query: which items are purchased last month and at what price?
+Generated SQL:
+SELECT
+  pbid.ItemNo,
+  CASE
+    WHEN pbid.Qty <> 0
+    THEN pbid.BasicAmount / pbid.Qty
+    ELSE NULL
+  END AS UnitPrice,
+  pbm.DocumentDate
+FROM Finance.PurchaseBillItemDetail AS pbid
+INNER JOIN Finance.PurchaseBillMain AS pbm
+  ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE
+  pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0) AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 14:44:47] Query: give with their name and vendor 
+Top 20 Initial: masterdata.mVendorCard, Finance.PurchaseBillTaxConcessionFormDetail, masterdata.mVendorLocationDetail, Inventory.GRNItemIndentDetail, Finance.PurchaseBillAdvanceDetail, masterdata.mSubGroupMaster, Purchase.POAmendmentMain, Finance.PurchaseBillMain, masterdata.mCompanyMaster, GateEntry.InvGateEntryItemDetail, GateEntry.InvGateEntryOrderDetail, masterdata.mWarehouse, Inventory.GRNMain, masterdata.mItemMaster, Purchase.POItemLRate, Purchase.POIndentDetail, Purchase.POMain, Purchase.POItemDetail, Inventory.GRNIndentReserveDetail, Inventory.GRNItemDetail
+Top 8 Final:   masterdata.mVendorCard, masterdata.mVendorLocationDetail, Finance.PurchaseBillTaxConcessionFormDetail, masterdata.mCompanyMaster, Inventory.GRNMain, Purchase.POAmendmentMain, Purchase.POMain, masterdata.mWarehouse
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:44:56
+Query: give with their name and vendor 
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorNo'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:44:59
+Query: give with their name and vendor 
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'PartyNo'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:45:01
+Query: give with their name and vendor 
+Generated SQL:
+SELECT
+  pbid.ItemNo,
+  mim.ItemName,
+  mvc.Name AS VendorName,
+  CASE
+    WHEN pbid.Qty <> 0
+    THEN pbid.BasicAmount / pbid.Qty
+    ELSE NULL
+  END AS UnitPrice,
+  pbm.DocumentDate
+FROM Finance.PurchaseBillItemDetail AS pbid
+INNER JOIN Finance.PurchaseBillMain AS pbm
+  ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+INNER JOIN masterdata.mVendorCard AS mvc
+  ON pbm.VendorNo = mvc.VendorNo
+INNER JOIN masterdata.mItemMaster AS mim
+  ON pbid.ItemNo = mim.ItemNo
+WHERE
+  pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0) 
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
+[2026-07-01 14:45:31] Query: try again use the original vendor column names
+Top 20 Initial: Purchase.POItemScheduleDetail, Purchase.POTermsNConditionDetail, Finance.PurchaseBillCustomFieldDetail, Purchase.POAmendmentTermsNConditionDetail, Finance.PurchaseBillTaxConcessionFormDetail, masterdata.mVendorCard, GateEntry.InvGateEntryOrderDetail, Finance.PurchaseBillAdvanceDetail, Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentItemLRate, Finance.PurchaseBillNotesDetail, masterdata.mWarehouse, Finance.PurchaseBillItemSerialDetail, Inventory.GRNItemIndentDetail, Finance.PurchaseBillMain, GlobalData.PurchaseBillSourceDocument, Inventory.GRNIndentReserveDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentMain
+Top 8 Final:   masterdata.mVendorCard, Purchase.POMain, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillTaxConcessionFormDetail, masterdata.mWarehouse, Purchase.POItemScheduleDetail, Purchase.POItemLRate
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:45:40
+Query: try again use the original vendor column names
+Error: Found 1 issues while parsing string.
+Line 5, Position 7: Found unparsable section: 'Alias,\n  mvc.MailingName,\n  pbid.ItemNo,...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:45:41
+Query: try again use the original vendor column names
+Error: Found 1 issues while parsing string.
+Line 5, Position 7: Found unparsable section: 'Alias,\n  mvc.MailingName,\n  pbid.ItemNo,...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:45:43
+Query: try again use the original vendor column names
+Generated SQL:
+SELECT
+  mvc.VendorNo,
+  mvc.Code,
+  mvc.Name,
+  mvc.Alias,
+  mvc.MailingName,
+  pbid.ItemNo,
+  CASE
+    WHEN pbid.Qty <> 0 THEN pbid.BasicAmount / pbid.Qty
+    ELSE NULL
+  END AS UnitPrice,
+  pbm.DocumentDate
+FROM Finance.PurchaseBillMain AS pbm
+INNER JOIN masterdata.mVendorCard AS mvc
+  ON pbm.PayToVendorNo = mvc.VendorNo
+INNER JOIN Finance.PurchaseBillItemDetail AS pbid
+  ON pbm.PurchaseBillNo = pbid.PurchaseBillNo
+WHERE
+  pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
+[2026-07-01 14:54:03] Query: give items purchased last month with vendor name and price
+Top 20 Initial: Purchase.POItemDetail, Security.Login, Purchase.POAmendmentMain, masterdata.mUnitMaster, Finance.PurchaseBillMain, masterdata.mLocationMaster, Purchase.POIndentDetail, masterdata.mStateMaster, Finance.PurchaseBillItemDetail, masterdata.mMakeMaster, masterdata.mVendorCard, masterdata.mCountryMaster, Purchase.POItemLRate, masterdata.mCategoryMaster, Inventory.GRNItemIndentDetail, payroll.tblDivisionMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mGroupMaster, Purchase.POPaymentTermsDetail, masterdata.mItemMaster
+Top 8 Final:   Finance.PurchaseBillMain, masterdata.mVendorCard, Purchase.POAmendmentMain, Purchase.POItemDetail, Purchase.POItemLRate, Purchase.POIndentDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:54:11
+Query: give items purchased last month with vendor name and price
+Generated SQL:
+SELECT
+  pbid.ItemNo,
+  mv.Name AS VendorName,
+  CASE
+    WHEN pbid.Qty <> 0
+    THEN pbid.BasicAmount / pbid.Qty
+    ELSE NULL
+  END AS UnitPrice,
+  pbm.DocumentDate
+FROM Finance.PurchaseBillItemDetail AS pbid
+INNER JOIN Finance.PurchaseBillMain AS pbm
+  ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+INNER JOIN masterdata.mVendorCard AS mv
+  ON pbm.PayToVendorNo = mv.VendorNo
+WHERE
+  pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0) AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 14:57:06] Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Top 20 Initial: Purchase.POItemScheduleDetail, Inventory.GRNItemIndentDetail, Inventory.GRNItemDetail, masterdata.mUnitMaster, Inventory.IndentRequisitionMain, Inventory.GRNMain, masterdata.mLocationMaster, Inventory.IndentRequisitionItemScheduleDetail, masterdata.mStateMaster, Inventory.GRNIndentReserveDetail, masterdata.mMakeMaster, masterdata.mCountryMaster, GateEntry.InvGateEntryOrderDetail, Inventory.IndentRequisitionItemDetail, masterdata.mCategoryMaster, GateEntry.InvGateEntryItemDetail, payroll.tblDivisionMaster, Purchase.POAmendmentIndentDetail, masterdata.mGroupMaster, Purchase.POIndentDetail
+Top 8 Final:   Inventory.GRNItemDetail, Inventory.GRNMain, Inventory.GRNItemIndentDetail, Inventory.GRNIndentReserveDetail, Inventory.IndentRequisitionItemScheduleDetail, Purchase.POItemScheduleDetail, Purchase.POIndentDetail, Inventory.IndentRequisitionMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:57:17
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'To calculate the number of days elapsed ...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:57:20
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'IndentRequisitionNo'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:57:22
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Generated SQL:
+SELECT 
+    IRM.DocumentNoYearly AS IndentNo,
+    GM.DocumentNoYearly AS GRNNo,
+    DATEDIFF(day, IRM.DocumentDate, GM.DocumentDate) AS DaysElapsed
+FROM Inventory.GRNMain GM
+JOIN Inventory.GRNItemIndentDetail GIID ON GM.GRNNo = GIID.GRNNo
+JOIN Inventory.IndentMain IM ON GIID.IndentNo = IM.IndentNo
+JOIN Inventory.IndentRequisitionMain IRM ON IM.IndentNo = IRM.IndentRequisitionNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 14:59:21] Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Top 20 Initial: Purchase.POItemScheduleDetail, Inventory.GRNItemIndentDetail, Inventory.GRNItemDetail, masterdata.mUnitMaster, Inventory.IndentRequisitionMain, Inventory.GRNMain, masterdata.mLocationMaster, Inventory.IndentRequisitionItemScheduleDetail, masterdata.mStateMaster, Inventory.GRNIndentReserveDetail, masterdata.mMakeMaster, masterdata.mCountryMaster, GateEntry.InvGateEntryOrderDetail, Inventory.IndentRequisitionItemDetail, masterdata.mCategoryMaster, GateEntry.InvGateEntryItemDetail, payroll.tblDivisionMaster, Purchase.POAmendmentIndentDetail, masterdata.mGroupMaster, Purchase.POIndentDetail
+Top 8 Final:   Inventory.GRNItemDetail, Inventory.GRNMain, Inventory.GRNItemIndentDetail, Inventory.GRNIndentReserveDetail, Inventory.IndentRequisitionItemScheduleDetail, Purchase.POItemScheduleDetail, Purchase.POIndentDetail, Inventory.IndentRequisitionMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 14:59:32
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n    DATEDIFF(day, IRM.Documen...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 14:59:35
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'IndentRequisitionNo'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 14:59:38
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made
+Generated SQL:
+SELECT 
+    GM.DocumentNoYearly AS GRNNo, 
+    IM.DocumentNoYearly AS IndentNo, 
+    DATEDIFF(day, IM.DocumentDate, GM.DocumentDate) AS DaysElapsed
+FROM Inventory.GRNMain AS GM
+INNER JOIN Inventory.GRNItemIndentDetail AS GIID ON GM.GRNNo = GIID.GRNNo
+INNER JOIN Inventory.IndentMain AS IM ON GIID.IndentNo = IM.IndentNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:01:49] Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made, for last month orders only.
+Top 20 Initial: Inventory.GRNItemIndentDetail, Security.Login, Inventory.GRNItemDetail, masterdata.mLocationMaster, Inventory.IndentRequisitionMain, Inventory.GRNMain, masterdata.mUnitMaster, masterdata.mCountryMaster, Inventory.IndentRequisitionItemDetail, Inventory.GRNIndentReserveDetail, masterdata.mMakeMaster, Purchase.POItemScheduleDetail, Inventory.IndentRequisitionItemScheduleDetail, masterdata.mStateMaster, Finance.PurchaseBillItemSerialDetail, GateEntry.InvGateEntryOrderDetail, masterdata.mCategoryMaster, GateEntry.InvGateEntryItemDetail, payroll.tblDivisionMaster, Purchase.POAmendmentIndentDetail
+Top 8 Final:   Inventory.GRNItemDetail, Inventory.GRNItemIndentDetail, Inventory.GRNMain, Inventory.GRNIndentReserveDetail, Purchase.POItemScheduleDetail, Inventory.IndentRequisitionItemScheduleDetail, GateEntry.InvGateEntryItemDetail, Purchase.POAmendmentIndentDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:02:00
+Query: give me the number of days elapsed between purchase request to the item coming to inventory and grn is made, for last month orders only.
+Generated SQL:
+SELECT
+    DATEDIFF(day, PAID.ScheduleDate, GM.DocumentDate) AS DaysElapsedBetweenPurchaseRequestAndGRN
+FROM
+    Inventory.GRNMain AS GM
+JOIN
+    Inventory.GRNItemDetail AS GID
+    ON GM.GRNNo = GID.GRNNo
+JOIN
+    Purchase.POAmendmentIndentDetail AS PAID
+    ON GID.POAmendmentNo = PAID.POAmendmentNo
+WHERE
+    GM.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0) -- Start of the last calendar month
+    AND GM.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0); -- Start of the current calendar month
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:05:54] Query: give with vendor and item name, rate
+Top 20 Initial: masterdata.mVendorCard, Purchase.POItemDetail, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POMain, Finance.PurchaseBillMain, Finance.PurchaseBillAdvanceDetail, Purchase.POAmendmentItemDetail, Purchase.POItemLRate, Purchase.POItemScheduleDetail, masterdata.mVendorLocationDetail, masterdata.mItemMaster, Finance.PurchaseBillItemTaxDetail, Purchase.POAmendmentMain, GateEntry.InvGateEntryItemDetail, Finance.PurchaseBillItemDetail, Inventory.IndentRequisitionMain, Inventory.GRNMain, Inventory.GRNItemIndentDetail, masterdata.mCompanyMaster, masterdata.mMiscCharges
+Top 8 Final:   Purchase.POItemLRate, Purchase.POMain, Purchase.POAmendmentItemDetail, Purchase.POItemDetail, Purchase.POAmendmentMain, GateEntry.InvGateEntryItemDetail, masterdata.mMiscCharges, Inventory.GRNMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 15:06:05
+Query: give with vendor and item name, rate
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n    MV.VendorName,\n    MI.Ite...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 15:06:08
+Query: give with vendor and item name, rate
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'VendorName'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:06:11
+Query: give with vendor and item name, rate
+Generated SQL:
+SELECT
+    VC.VendorShortName AS VendorName,
+    IM.ItemName,
+    PAID.Rate,
+    DATEDIFF(day, PAM.DocumentDate, GM.DocumentDate) AS DaysElapsedBetweenPurchaseRequestAndGRN
+FROM
+    Inventory.GRNMain AS GM
+JOIN
+    Inventory.GRNItemDetail AS GID ON GM.GRNNo = GID.GRNNo
+JOIN
+    Purchase.POAmendmentMain AS PAM ON GID.POAmendmentNo = PAM.POAmendmentNo
+JOIN
+    Purchase.POAmendmentItemDetail AS PAID ON PAM.POAmendmentNo = PAID.POAmendmentNo
+JOIN
+    masterdata.mVendorCard AS VC ON PAM.VendorNo = VC.VendorNo
+JOIN
+    masterdata.mItemMaster AS IM ON PAID.ItemNo = IM.ItemNo
+WHERE
+    GM.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+    AND GM.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
+[2026-07-01 15:08:27] Query: give without vendor name just item name and rate
+Top 20 Initial: Finance.PurchaseBillAdvanceDetail, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POItemLRate, Finance.PurchaseBillItemTaxDetail, masterdata.mMiscCharges, Purchase.POItemDetail, Purchase.POItemTaxDetail, Finance.PurchaseBillItemDetail, Purchase.POAmendmentItemTaxDetail, Inventory.IndentItemDetail, Finance.PurchaseBillMain, masterdata.mVendorCard, Purchase.POAmendmentItemLRate, GateEntry.InvGateEntryItemDetail, masterdata.mItemMaster, Inventory.GRNTaxDetail, Finance.PurchaseBillNotesDetail, Inventory.GRNItemTaxDetail, Finance.PurchaseBillSummary, Inventory.GRNItemIndentDetail
+Top 8 Final:   Purchase.POItemLRate, Purchase.POAmendmentItemLRate, Purchase.POItemDetail, GateEntry.InvGateEntryItemDetail, Purchase.POItemTaxDetail, Inventory.IndentItemDetail, Finance.PurchaseBillMain, masterdata.mMiscCharges
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:08:33
+Query: give without vendor name just item name and rate
+Generated SQL:
+SELECT
+  MIM.ItemName,
+  PID.Rate
+FROM Purchase.POItemDetail AS PID
+JOIN masterdata.mItemMaster AS MIM
+  ON PID.ItemNo = MIM.ItemNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:16:47] Query: give me the item name and their prices that are purchased in last 15 days
+Top 20 Initial: Purchase.POIndentDetail, masterdata.mUnitMaster, Purchase.POItemDetail, masterdata.mLocationMaster, Finance.PurchaseBillItemSerialDetail, Security.Login, Inventory.GRNItemDetail, masterdata.mStateMaster, Inventory.GRNItemIndentDetail, masterdata.mMakeMaster, Finance.PurchaseBillItemDetail, masterdata.mCountryMaster, Purchase.POAmendmentIndentDetail, masterdata.mCategoryMaster, Purchase.POAmendmentMain, payroll.tblDivisionMaster, Purchase.POItemLRate, masterdata.mGroupMaster, GateEntry.InvGateEntryItemDetail, masterdata.mItemMaster
+Top 8 Final:   Purchase.POItemLRate, Purchase.POItemDetail, Finance.PurchaseBillItemDetail, Purchase.POIndentDetail, masterdata.mItemMaster, Inventory.GRNItemDetail, Finance.PurchaseBillItemSerialDetail, GateEntry.InvGateEntryItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 15:16:59
+Query: give me the item name and their prices that are purchased in last 15 days
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 15:17:03
+Query: give me the item name and their prices that are purchased in last 15 days
+Error: Database schema error: ('42S22', "[42S22] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'BillDate'. (207) (SQLExecDirectW)")
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:17:05
+Query: give me the item name and their prices that are purchased in last 15 days
+Generated SQL:
+SELECT DISTINCT 
+    IM.ItemName, 
+    PBI.BillableBasicAmount AS Price
+FROM Finance.PurchaseBillItemDetail PBI
+JOIN masterdata.mItemMaster IM ON PBI.ItemNo = IM.ItemNo
+JOIN Finance.PurchaseBillMain PBM ON PBI.PurchaseBillNo = PBM.PurchaseBillNo
+WHERE PBM.PurchaseBillDate >= DATEADD(day, -15, GETDATE());
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
