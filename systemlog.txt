@@ -451,3 +451,797 @@ JOIN Finance.PurchaseBillMain PBM ON PBI.PurchaseBillNo = PBM.PurchaseBillNo
 WHERE PBM.PurchaseBillDate >= DATEADD(day, -15, GETDATE());
 Status: FAILED (Exceeded max retries)
 ------------------------------------------------------------
+[2026-07-01 15:28:57] Query: give me purchase trend
+Top 20 Initial: Finance.PurchaseBillAdvanceDetail, Purchase.POIndentDetail, Purchase.POAmendmentMain, Purchase.POItemLRate, Purchase.POAmendmentIndentDetail, Purchase.POItemDetail, Purchase.POAmendmentItemLRate, Inventory.GRNItemIndentDetail, Purchase.POMain, Purchase.POAmendmentPaymentTermsDetail, Purchase.POExpenseHead, Inventory.GRNItemDetail, Purchase.POAmendmentExpenseHead, Finance.PurchaseBillTaxConcessionFormDetail, GateEntry.InvGateEntryItemDetail, Purchase.POAmendmentItemDetail, Purchase.POPaymentTermsDetail, Purchase.POAmendmentItemScheduleDetail, Finance.PurchaseBillItemTaxDetail, Finance.PurchaseBillItemDetail
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, GateEntry.InvGateEntryItemDetail, Inventory.GRNItemDetail, Purchase.POItemDetail, Purchase.POIndentDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:29:05
+Query: give me purchase trend
+Generated SQL:
+SELECT
+  YEAR(POMain.DocumentDate) AS PurchaseYear,
+  MONTH(POMain.DocumentDate) AS PurchaseMonth,
+  SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.POMain AS POMain
+GROUP BY
+  YEAR(POMain.DocumentDate),
+  MONTH(POMain.DocumentDate)
+ORDER BY
+  PurchaseYear,
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:34:12] Query: give me full purchase lifecycle data from purchase to grn to purchase billing
+Top 20 Initial: Finance.PurchaseBillItemTaxDetail, Purchase.POItemScheduleDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillMain, Finance.PurchaseBillSummary, Finance.PurchaseBillItemSerialDetail, GlobalData.PurchaseBillSourceDocument, Inventory.GRNItemTaxDetail, Finance.PurchaseBillTaxConcessionFormDetail, Inventory.GRNItemDetail, Inventory.GRNTaxDetail, Inventory.GRNMain, Inventory.GRNItemIndentDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentMain, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentItemTaxDetail, Purchase.POExpenseHead, Purchase.POItemTaxDetail, Purchase.POPaymentTermsDetail
+Top 8 Final:   Inventory.GRNMain, Finance.PurchaseBillItemDetail, GlobalData.PurchaseBillSourceDocument, Finance.PurchaseBillMain, Inventory.GRNItemDetail, Inventory.GRNTaxDetail, Purchase.POExpenseHead, Purchase.POAmendmentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 15:34:24
+Query: give me full purchase lifecycle data from purchase to grn to purchase billing
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n  -- Purchase Order Details\n ...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:34:28
+Query: give me full purchase lifecycle data from purchase to grn to purchase billing
+Generated SQL:
+SELECT
+  PO.POAmendmentNo AS PurchaseOrderAmendmentID,
+  PO.DocumentNoYearly AS PurchaseOrderNumber,
+  PO.DocumentDate AS PurchaseOrderDate,
+  PO.NetAmount AS PurchaseOrderTotalAmount,
+  PO.VendorNo AS VendorID,
+  GRN.GRNNo AS GRNID,
+  GRN.DocumentNoYearly AS GRNNumber,
+  GRN.DocumentDate AS GRNDate,
+  GRNItem.ItemNo,
+  GRNItem.AcceptedQty,
+  PB.PurchaseBillNo,
+  PB.DocumentNoYearly AS PurchaseBillNumber,
+  PB.DocumentDate AS PurchaseBillDate,
+  PB.NetAmount AS PurchaseBillAmount
+FROM Purchase.POAmendmentMain AS PO
+INNER JOIN Inventory.GRNItemDetail AS GRNItem 
+  ON PO.POAmendmentNo = GRNItem.POAmendmentNo
+INNER JOIN Inventory.GRNMain AS GRN 
+  ON GRNItem.GRNNo = GRN.GRNNo
+LEFT JOIN Finance.PurchaseBillItemDetail AS PBItem 
+  ON GRN.GRNNo = PBItem.GRNNo 
+  AND GRNItem.ItemNo = PBItem.ItemNo
+LEFT JOIN Finance.PurchaseBillMain AS PB 
+  ON PBItem.PurchaseBillNo = PB.PurchaseBillNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:37:12] Query: give me full purchase lifecylce from purchase order to grn to purchase bill for last 3 months 
+Top 20 Initial: Finance.PurchaseBillItemSerialDetail, Security.Login, Finance.PurchaseBillMain, Purchase.POItemScheduleDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillItemTaxDetail, Finance.PurchaseBillSummary, Purchase.POAmendmentPaymentTermsDetail, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POAmendmentMain, Inventory.GRNItemIndentDetail, Finance.PurchaseBillAdvanceDetail, Inventory.GRNItemDetail, GlobalData.PurchaseBillSourceDocument, Inventory.GRNItemTaxDetail, Purchase.POMain, Inventory.GRNMain, Purchase.POAmendmentExpenseHead, Purchase.POPaymentTermsDetail, Finance.PurchaseBillNotesDetail
+Top 8 Final:   Inventory.GRNMain, Finance.PurchaseBillItemDetail, Finance.PurchaseBillMain, GlobalData.PurchaseBillSourceDocument, Purchase.POMain, Purchase.POAmendmentMain, Inventory.GRNItemDetail, Finance.PurchaseBillSummary
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 15:37:25
+Query: give me full purchase lifecylce from purchase order to grn to purchase bill for last 3 months 
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n    -- Purchase Order (PO) De...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:37:28
+Query: give me full purchase lifecylce from purchase order to grn to purchase bill for last 3 months 
+Generated SQL:
+SELECT 
+    POM.DocumentNoYearly AS PONumber,
+    POM.DocumentDate AS PODate,
+    GRN.DocumentNoYearly AS GRNNumber,
+    GRN.DocumentDate AS GRNDate,
+    PBM.DocumentNoYearly AS PurchaseBillNumber,
+    PBM.DocumentDate AS PurchaseBillDate,
+    PBM.VendorBillNo,
+    PBM.VendorBillAmount
+FROM Purchase.POMain POM
+LEFT JOIN Inventory.GRNMain GRN ON POM.PONo = GRN.GRNNo -- Note: Linkage logic depends on specific business implementation (e.g., POAmendmentNo)
+LEFT JOIN Finance.PurchaseBillItemDetail PBI ON GRN.GRNNo = PBI.GRNNo
+LEFT JOIN Finance.PurchaseBillMain PBM ON PBI.PurchaseBillNo = PBM.PurchaseBillNo
+WHERE POM.DocumentDate >= DATEADD(MONTH, -3, GETDATE())
+ORDER BY POM.DocumentDate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 15:40:30] Query: give me full purchase cycle from purchase to grn to purchase bill for last 3 moths, for purchase order use poamendmentMain
+Top 20 Initial: Purchase.POAmendmentMain, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentItemLRate, Purchase.POMain, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentItemDetail, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentTaxDetail, Purchase.POAmendmentTermsNConditionDetail, Purchase.POAmendmentItemTaxDetail, Purchase.POPaymentTermsDetail, Purchase.POIndentDetail, GateEntry.InvGateEntryOrderDetail, Inventory.GRNItemDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail, Inventory.GRNItemIndentDetail, GateEntry.InvGateEntryItemDetail, Finance.PurchaseBillItemSerialDetail
+Top 8 Final:   Purchase.POAmendmentMain, Finance.PurchaseBillItemDetail, Purchase.POMain, Inventory.GRNItemDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentTermsNConditionDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 15:40:38
+Query: give me full purchase cycle from purchase to grn to purchase bill for last 3 moths, for purchase order use poamendmentMain
+Generated SQL:
+SELECT
+  PAM.POAmendmentNo,
+  PAM.POAmendmentDate,
+  PAM.DocumentNoYearly AS POAmendmentDocumentNo,
+  PAM.PONo AS OriginalPONo,
+  PAM.AmendmentNo AS POAmendmentVersion,
+  PAM.VendorNo,
+  PAM.NetAmount AS POAmendmentNetAmount,
+  GID.GRNNo,
+  GID.ReceivedQty AS GRNReceivedQty,
+  GID.RejectedQty AS GRNRejectedQty,
+  GID.Rate AS GRNItemRate,
+  PBID.PurchaseBillNo,
+  PBID.Qty AS PurchaseBillQty,
+  PBID.BasicAmount AS PurchaseBillBasicAmount,
+  PBID.BillableBasicAmount AS PurchaseBillBillableBasicAmount,
+  PBID.TaxableValue AS PurchaseBillTaxableValue
+FROM Purchase.POAmendmentMain AS PAM
+LEFT JOIN Inventory.GRNItemDetail AS GID
+  ON PAM.POAmendmentNo = GID.POAmendmentNo
+LEFT JOIN Finance.PurchaseBillItemDetail AS PBID
+  ON PAM.POAmendmentNo = PBID.POAmendmentNo
+WHERE
+  PAM.POAmendmentDate >= DATEADD(month, -3, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 16:16:02] Query: list top 5 vendors of last month based on purchase orders
+Top 20 Initial: Purchase.POAmendmentMain, Security.Login, Purchase.POIndentDetail, masterdata.mCountryMaster, Purchase.POMain, masterdata.mLocationMaster, GateEntry.InvGateEntryOrderDetail, masterdata.mMakeMaster, Inventory.GRNItemIndentDetail, masterdata.mFYear, Purchase.POAmendmentIndentDetail, masterdata.mCategoryMaster, Finance.PurchaseBillMain, Inventory.IndentRequisitionItemDetail, masterdata.mVendorCard, masterdata.mUnitMaster, Purchase.POItemDetail, Purchase.POAmendmentItemTaxDetail, Inventory.IndentRequisitionMain, Finance.PurchaseBillNotesDetail
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, Finance.PurchaseBillMain, masterdata.mVendorCard, Inventory.IndentRequisitionMain, Purchase.POItemDetail, Purchase.POIndentDetail, GateEntry.InvGateEntryOrderDetail
+------------------------------------------------------------
+[2026-07-01 16:20:09] Query: list top 5 vendors of last month based on purchase orders
+Top 20 Initial: Purchase.POAmendmentMain, Security.Login, Purchase.POIndentDetail, masterdata.mCountryMaster, Purchase.POMain, masterdata.mLocationMaster, GateEntry.InvGateEntryOrderDetail, masterdata.mMakeMaster, Inventory.GRNItemIndentDetail, masterdata.mFYear, Purchase.POAmendmentIndentDetail, masterdata.mCategoryMaster, Finance.PurchaseBillMain, Inventory.IndentRequisitionItemDetail, masterdata.mVendorCard, masterdata.mUnitMaster, Purchase.POItemDetail, Purchase.POAmendmentItemTaxDetail, Inventory.IndentRequisitionMain, Finance.PurchaseBillNotesDetail
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, Finance.PurchaseBillMain, masterdata.mVendorCard, Inventory.IndentRequisitionMain, Purchase.POItemDetail, Purchase.POIndentDetail, GateEntry.InvGateEntryOrderDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 16:20:18
+Query: list top 5 vendors of last month based on purchase orders
+Generated SQL:
+SELECT TOP 5
+  V.Name,
+  SUM(P.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.POMain AS P
+INNER JOIN masterdata.mVendorCard AS V
+  ON P.VendorNo = V.VendorNo
+WHERE
+  P.CreatedDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0) AND P.CreatedDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  V.Name
+ORDER BY
+  TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 16:27:08] Query: give me full purchase cycle from purchase to grn to purchase bill for last 3 moths, for purchase order use poamendmentMain
+Top 20 Initial: Purchase.POAmendmentMain, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentItemLRate, Purchase.POMain, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentItemDetail, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentTaxDetail, Purchase.POAmendmentTermsNConditionDetail, Purchase.POAmendmentItemTaxDetail, Purchase.POPaymentTermsDetail, Purchase.POIndentDetail, GateEntry.InvGateEntryOrderDetail, Inventory.GRNItemDetail, Finance.PurchaseBillItemDetail, Finance.PurchaseBillAdvanceDetail, Inventory.GRNItemIndentDetail, GateEntry.InvGateEntryItemDetail, Finance.PurchaseBillItemSerialDetail
+Top 8 Final:   Purchase.POAmendmentMain, Finance.PurchaseBillItemDetail, Purchase.POMain, Inventory.GRNItemDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentTermsNConditionDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 16:27:23
+Query: give me full purchase cycle from purchase to grn to purchase bill for last 3 moths, for purchase order use poamendmentMain
+Generated SQL:
+SELECT
+  PAM.POAmendmentNo,
+  PAM.POAmendmentDate,
+  PAM.DocumentNoYearly AS POAmendmentDocumentNo,
+  PAM.PONo AS OriginalPONo,
+  PAM.AmendmentNo AS POAmendmentVersion,
+  PAM.VendorNo,
+  PAM.NetAmount AS POAmendmentNetAmount,
+  GID.GRNNo,
+  GID.ReceivedQty AS GRNReceivedQty,
+  GID.RejectedQty AS GRNRejectedQty,
+  GID.Rate AS GRNItemRate,
+  PBID.PurchaseBillNo,
+  PBID.Qty AS PurchaseBillQty,
+  PBID.BasicAmount AS PurchaseBillBasicAmount,
+  PBID.BillableBasicAmount AS PurchaseBillBillableBasicAmount,
+  PBID.TaxableValue AS PurchaseBillTaxableValue
+FROM Purchase.POAmendmentMain AS PAM
+LEFT JOIN Inventory.GRNItemDetail AS GID
+  ON PAM.POAmendmentNo = GID.POAmendmentNo
+LEFT JOIN Finance.PurchaseBillItemDetail AS PBID
+  ON PAM.POAmendmentNo = PBID.POAmendmentNo
+WHERE
+  PAM.POAmendmentDate >= DATEADD(month, -3, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:04:43] Query: Tell me most expensive month in terms for purchase amount for last 7 months.
+Top 20 Initial: Purchase.POAmendmentMain, Security.Login, Purchase.POMain, Purchase.POAmendmentPaymentTermsDetail, masterdata.mCompanyMaster, Finance.PurchaseBillMain, Purchase.POItemDetail, Finance.PurchaseBillItemDetail, masterdata.mStateMaster, Purchase.POIndentDetail, Inventory.GRNMain, Purchase.POAmendmentItemDetail, Purchase.POAmendmentExpenseHead, Purchase.POItemLRate, Purchase.POAmendmentIndentDetail, Purchase.POPaymentTermsDetail, masterdata.mCityMaster, Finance.PurchaseBillSummary, Purchase.POAmendmentItemLRate, Purchase.POExpenseHead
+Top 8 Final:   Purchase.POPaymentTermsDetail, Purchase.POMain, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillSummary, Purchase.POItemDetail, Purchase.POIndentDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:04:48
+Query: Tell me most expensive month in terms for purchase amount for last 7 months.
+Generated SQL:
+SELECT TOP 1
+    FORMAT(POMain.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+    SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM
+    Purchase.POMain AS POMain
+WHERE
+    POMain.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+    FORMAT(POMain.DocumentDate, 'yyyy-MM')
+ORDER BY
+    TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:05:57] Query: Show me month wise purchase amount in crore. give this data for last 10 month only. show me % of purchase too amoung these 10 months.
+Top 20 Initial: Purchase.POExpenseHead, Purchase.POAmendmentPaymentTermsDetail, Purchase.POPaymentTermsDetail, Purchase.POAmendmentExpenseHead, Purchase.POMain, Purchase.POItemDetail, Purchase.POAmendmentMain, Finance.PurchaseBillSummary, Security.Login, Finance.PurchaseBillItemTaxDetail, Purchase.POItemLRate, Finance.PurchaseBillAdvanceDetail, Inventory.GRNMain, Purchase.POIndentDetail, masterdata.mCompanyMaster, Finance.PurchaseBillItemDetail, GateEntry.InvGateEntryMain, Purchase.POTaxDetail, masterdata.mStateMaster, Purchase.POAmendmentItemDetail
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, masterdata.mCompanyMaster, Purchase.POPaymentTermsDetail, Purchase.POItemDetail, Purchase.POIndentDetail, Finance.PurchaseBillAdvanceDetail, Finance.PurchaseBillSummary
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:06:03
+Query: Show me month wise purchase amount in crore. give this data for last 10 month only. show me % of purchase too amoung these 10 months.
+Generated SQL:
+WITH MonthlyPurchases AS (
+    SELECT
+        FORMAT(POMain.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+        SUM(POMain.NetAmount) AS MonthlyPurchaseAmount
+    FROM
+        Purchase.POMain AS POMain
+    WHERE
+        POMain.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+        FORMAT(POMain.DocumentDate, 'yyyy-MM')
+),
+TotalPurchases AS (
+    SELECT
+        SUM(MonthlyPurchaseAmount) AS OverallTotalPurchaseAmount
+    FROM
+        MonthlyPurchases
+)
+SELECT
+    mp.PurchaseMonth,
+    mp.MonthlyPurchaseAmount / 10000000 AS PurchaseAmountInCrore,
+    (mp.MonthlyPurchaseAmount * 100.0 / tp.OverallTotalPurchaseAmount) AS PercentageOfPurchase
+FROM
+    MonthlyPurchases AS mp
+CROSS JOIN
+    TotalPurchases AS tp
+ORDER BY
+    mp.PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:07:09] Query: tell the reason that why  april 2026 is costlier then dec 2025.  
+Top 20 Initial: Purchase.POAmendmentMain, Inventory.IndentRequisitionMain, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentExpenseHead, Finance.PurchaseBillAdvanceDetail, Finance.PurchaseBillItemDetail, Purchase.POPaymentTermsDetail, Finance.PurchaseBillItemSerialDetail, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentItemDetail, Finance.PurchaseBillMain, masterdata.mCostCenterMaster, Purchase.POMain, Purchase.POExpenseHead, masterdata.mFYear, Purchase.POAmendmentItemTaxDetail, Purchase.POAmendmentItemLRate, Purchase.POItemDetail, Purchase.POIndentDetail
+Top 8 Final:   Purchase.POPaymentTermsDetail, masterdata.mFYear, Finance.PurchaseBillMain, Purchase.POItemDetail, masterdata.mCostCenterMaster, Purchase.POMain, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:07:22
+Query: tell the reason that why  april 2026 is costlier then dec 2025.  
+Error: Found 2 issues while parsing string.
+Unable to lex characters: "'2026-05-"
+Line 1, Position 1: Found unparsable section: 'sql\nWITH MonthlyTotals AS (\n    SELECT\n ...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:07:25
+Query: tell the reason that why  april 2026 is costlier then dec 2025.  
+Generated SQL:
+SELECT 
+    Item.ItemNo,
+    Item.TechSpecification,
+    SUM(Item.NetAmount) AS TotalAmount,
+    FORMAT(Main.DocumentDate, 'yyyy-MM') AS PurchaseMonth
+FROM 
+    Purchase.POMain AS Main
+JOIN 
+    Purchase.POItemDetail AS Item ON Main.PONo = Item.PONo
+WHERE 
+    (Main.DocumentDate >= '2026-04-01' AND Main.DocumentDate < '2026-05-01')
+    OR 
+    (Main.DocumentDate >= '2025-12-01' AND Main.DocumentDate < '2026-01-01')
+GROUP BY 
+    FORMAT(Main.DocumentDate, 'yyyy-MM'),
+    Item.ItemNo,
+    Item.TechSpecification
+ORDER BY 
+    PurchaseMonth, 
+    TotalAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:09:34] Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount.
+Top 20 Initial: Purchase.POExpenseHead, Security.Login, Purchase.POMain, Purchase.POItemDetail, Purchase.POItemLRate, masterdata.mCompanyMaster, Purchase.POIndentDetail, Purchase.POAmendmentMain, masterdata.mStateMaster, Purchase.POPaymentTermsDetail, Inventory.GRNMain, Purchase.POAmendmentItemLRate, Purchase.POTermsNConditionDetail, Purchase.POItemTaxDetail, masterdata.mCityMaster, Purchase.POTaxDetail, Purchase.POAmendmentIndentDetail, Inventory.IndentRequisitionMain, GateEntry.InvGateEntryOrderDetail, masterdata.mItemMaster
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, masterdata.mCompanyMaster, Inventory.GRNMain, Purchase.POExpenseHead, Purchase.POIndentDetail, Inventory.IndentRequisitionMain, Purchase.POItemLRate
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:09:43
+Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount.
+Generated SQL:
+-- Top 5 vendors by the number of purchase orders received in the last 10 months
+SELECT TOP 5
+    POMain.VendorNo,
+    COUNT(POMain.PONo) AS NumberOfPurchaseOrders
+FROM
+    Purchase.POMain AS POMain
+WHERE
+    POMain.DocumentDate >= DATEADD(month, -10, GETDATE())
+GROUP BY
+    POMain.VendorNo
+ORDER BY
+    NumberOfPurchaseOrders DESC;
+
+-- Top 5 vendors by the total purchase order amount in the last 10 months
+SELECT TOP 5
+    POMain.VendorNo,
+    SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM
+    Purchase.POMain AS POMain
+WHERE
+    POMain.DocumentDate >= DATEADD(month, -10, GETDATE())
+GROUP BY
+    POMain.VendorNo
+ORDER BY
+    TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:10:47] Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount. keep both in one result and differtiate it with one column
+Top 20 Initial: Purchase.POItemLRate, Purchase.POIndentDetail, Purchase.POAmendmentItemLRate, Purchase.POAmendmentIndentDetail, Purchase.POTermsNConditionDetail, Purchase.POItemDetail, Purchase.POItemScheduleDetail, Purchase.POMain, Purchase.POExpenseHead, Security.Login, masterdata.mCompanyMaster, Purchase.POAmendmentMain, Purchase.POPaymentTermsDetail, masterdata.mStateMaster, Finance.PurchaseBillAdvanceDetail, Inventory.GRNMain, Purchase.POItemTaxDetail, GateEntry.InvGateEntryOrderDetail, Purchase.POTaxDetail, masterdata.mCityMaster
+Top 8 Final:   Purchase.POMain, Purchase.POAmendmentMain, masterdata.mCompanyMaster, Inventory.GRNMain, Purchase.POExpenseHead, Purchase.POIndentDetail, Purchase.POItemDetail, Purchase.POItemScheduleDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:10:58
+Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount. keep both in one result and differtiate it with one column
+Error: Found 1 issues while parsing string.
+Line 6, Position 1: Found unparsable section: 'FROM\n    (\n        -- Top 5 vendors by t...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 17:11:01
+Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount. keep both in one result and differtiate it with one column
+Error: Database schema error: ('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The multi-part identifier "v.VendorNo" could not be bound. (4104) (SQLExecDirectW); [42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The multi-part identifier "v.VendorNo" could not be bound. (4104)')
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:11:02
+Query: tell which vendor is having maxium number of purchase order received in last 10 month. give 5 vendor on basis of po count and 5 on basis of po amount. keep both in one result and differtiate it with one column
+Generated SQL:
+SELECT 
+    t.VendorNo,
+    t.MetricType,
+    t.MetricValue
+FROM (
+    SELECT TOP 5
+        VendorNo,
+        CAST(COUNT(PONo) AS FLOAT) AS MetricValue,
+        'By PO Count' AS MetricType
+    FROM Purchase.POMain
+    WHERE DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY VendorNo
+    ORDER BY MetricValue DESC
+    
+    UNION ALL
+    
+    SELECT TOP 5
+        VendorNo,
+        SUM(NetAmount) AS MetricValue,
+        'By PO Amount' AS MetricType
+    FROM Purchase.POMain
+    WHERE DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY VendorNo
+    ORDER BY MetricValue DESC
+) AS t
+ORDER BY t.MetricType, t.MetricValue DESC;
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
+[2026-07-01 17:13:22] Query: Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po  netamount wise.
+
+I need total po count and total po amount too for each vendor.
+Top 20 Initial: Purchase.POIndentDetail, masterdata.mVendorLocationDetail, Purchase.POAmendmentMain, Purchase.POAmendmentItemLRate, Purchase.POMain, Purchase.POAmendmentItemDetail, Purchase.POItemLRate, Purchase.POAmendmentIndentDetail, Purchase.POTermsNConditionDetail, Purchase.POAmendmentTermsNConditionDetail, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentItemTaxDetail, masterdata.mVendorCard, Purchase.POAmendmentExpenseHead, Finance.PurchaseBillMain, Finance.PurchaseBillItemDetail, Purchase.POItemDetail, masterdata.mLocationMaster, Purchase.POAmendmentPaymentTermsDetail, GateEntry.InvGateEntryOrderDetail
+Top 8 Final:   Purchase.POAmendmentMain, Purchase.POMain, Finance.PurchaseBillMain, masterdata.mVendorLocationDetail, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentItemDetail, Purchase.POAmendmentIndentDetail, Purchase.POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:13:32
+Query: Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po  netamount wise.
+
+I need total po count and total po amount too for each vendor.
+Error: Database schema error: ('42000', '[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]ORDER BY items must appear in the select list if the statement contains a UNION, INTERSECT or EXCEPT operator. (104) (SQLExecDirectW); [42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]ORDER BY items must appear in the select list if the statement contains a UNION, INTERSECT or EXCEPT operator. (104); [42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]ORDER BY items must appear in the select list if the statement contains a UNION, INTERSECT or EXCEPT operator. (104)')
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-01 17:13:34
+Query: Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po  netamount wise.
+
+I need total po count and total po amount too for each vendor.
+Error: Found 1 issues while parsing string.
+Line 25, Position 5: Found unparsable section: 'UNION ALL\n    \n    SELECT TOP 5\n        ...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:13:36
+Query: Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po  netamount wise.
+
+I need total po count and total po amount too for each vendor.
+Generated SQL:
+SELECT 
+    VendorLocationNo, 
+    TotalPOCount, 
+    TotalPOAmount, 
+    RankingType
+FROM (
+    SELECT TOP 5
+        VendorLocationNo,
+        COUNT(PONo) AS TotalPOCount,
+        SUM(NetAmount) AS TotalPOAmount,
+        1 AS RankingOrder,
+        'Top 5 by PO Count' AS RankingType
+    FROM
+        Purchase.POMain
+    WHERE
+        DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+        VendorLocationNo
+    ORDER BY
+        COUNT(PONo) DESC, SUM(NetAmount) DESC
+) AS CountWise
+
+UNION ALL
+
+SELECT 
+    VendorLocationNo, 
+    TotalPOCount, 
+    TotalPOAmount, 
+    RankingType
+FROM (
+    SELECT TOP 5
+        VendorLocationNo,
+        COUNT(PONo) AS TotalPOCount,
+        SUM(NetAmount) AS TotalPOAmount,
+        2 AS RankingOrder,
+        'Top 5 by PO Amount' AS RankingType
+    FROM
+        Purchase.POMain
+    WHERE
+        DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+        VendorLocationNo
+    ORDER BY
+        SUM(NetAmount) DESC, COUNT(PONo) DESC
+) AS AmountWise
+
+ORDER BY 
+    RankingOrder, 
+    CASE WHEN RankingOrder = 1 THEN TotalPOCount END DESC, 
+    CASE WHEN RankingOrder = 2 THEN TotalPOAmount END DESC;
+Status: FAILED (Exceeded max retries)
+------------------------------------------------------------
+[2026-07-01 17:13:52] Query: L.
+Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po netamount wise. 
+Top 20 Initial: Purchase.POAmendmentItemLRate, masterdata.mVendorLocationDetail, Purchase.POAmendmentMain, Purchase.POIndentDetail, Purchase.POMain, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemDetail, Purchase.POItemLRate, Purchase.POAmendmentTermsNConditionDetail, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentItemScheduleDetail, Finance.PurchaseBillMain, Purchase.POTermsNConditionDetail, masterdata.mVendorCard, Finance.PurchaseBillItemDetail, Purchase.POAmendmentItemTaxDetail, Purchase.POAmendmentPaymentTermsDetail, GateEntry.InvGateEntryOrderDetail, masterdata.mLocationMaster, Inventory.GRNItemIndentDetail
+Top 8 Final:   Purchase.POAmendmentMain, Purchase.POMain, Finance.PurchaseBillMain, masterdata.mVendorLocationDetail, masterdata.mLocationMaster, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentExpenseHead
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:13:58
+Query: L.
+Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po netamount wise. 
+Error: Found 1 issues while parsing string.
+Line 14, Position 1: Found unparsable section: 'UNION ALL\n\nSELECT TOP 5\n    POMain.Vendo...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:14:01
+Query: L.
+Give list of 5 VendorLocationNo who is having maximum number of purchase order (not po amendment) in last 10 months. I need one list where first 5 rows will be top 5 vendor po count wise in last 10 months and next 5 rows will be top 5 vendor in last 10 months po netamount wise. 
+Generated SQL:
+SELECT * FROM (
+    SELECT TOP 5
+        POMain.VendorLocationNo,
+        COUNT(POMain.PONo) AS MetricValue,
+        'PO Count' AS MetricType,
+        1 AS SortOrder
+    FROM
+        Purchase.POMain AS POMain
+    WHERE
+        POMain.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+        POMain.VendorLocationNo
+    ORDER BY
+        MetricValue DESC
+) AS TopCount
+
+UNION ALL
+
+SELECT * FROM (
+    SELECT TOP 5
+        POMain.VendorLocationNo,
+        SUM(POMain.NetAmount) AS MetricValue,
+        'PO Amount' AS MetricType,
+        2 AS SortOrder
+    FROM
+        Purchase.POMain AS POMain
+    WHERE
+        POMain.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+        POMain.VendorLocationNo
+    ORDER BY
+        MetricValue DESC
+) AS TopAmount
+ORDER BY 
+    SortOrder, 
+    MetricValue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:14:49] Query: check the performance of vendorlocationno 3598 on basis of purchaseorderschedule and grn received. check this for last 10 months only.
+Top 20 Initial: Inventory.GRNItemIndentDetail, Purchase.POItemScheduleDetail, masterdata.mSubGroupMaster, Inventory.GRNMain, Inventory.IndentRequisitionItemScheduleDetail, Inventory.GRNItemDetail, Security.Login, Purchase.POItemLRate, Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentMain, Purchase.POMain, masterdata.mVendorLocationDetail, Purchase.POIndentDetail, masterdata.mCompanyMaster, Purchase.POAmendmentItemLRate, Inventory.GRNIndentReserveDetail, masterdata.mStateMaster, Purchase.POExpenseHead, GateEntry.InvGateEntryOrderDetail, masterdata.mCityMaster
+Top 8 Final:   Inventory.GRNMain, masterdata.mVendorLocationDetail, Purchase.POMain, Purchase.POAmendmentMain, Purchase.POItemScheduleDetail, Inventory.GRNItemDetail, masterdata.mCompanyMaster, Inventory.GRNItemIndentDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:15:04
+Query: check the performance of vendorlocationno 3598 on basis of purchaseorderschedule and grn received. check this for last 10 months only.
+Generated SQL:
+SELECT
+    'PO Schedule' AS MetricType,
+    SUM(PISD.ScheduleQty) AS TotalQuantity,
+    NULL AS TotalAmount
+FROM
+    Purchase.POItemScheduleDetail AS PISD
+JOIN
+    Purchase.POMain AS PM ON PISD.PONo = PM.PONo
+WHERE
+    PM.VendorLocationNo = 3598
+    AND PISD.ScheduleDate >= DATEADD(month, -10, GETDATE())
+
+UNION ALL
+
+SELECT
+    'GRN Received' AS MetricType,
+    SUM(GRID.ReceivedQty) AS TotalQuantity,
+    SUM(GRID.ReceivedQty * GRID.Rate) AS TotalAmount
+FROM
+    Inventory.GRNItemDetail AS GRID
+JOIN
+    Inventory.GRNMain AS GM ON GRID.GRNNo = GM.GRNNo
+WHERE
+    GM.VendorLocationNo = 3598
+    AND GM.DocumentDate >= DATEADD(month, -10, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:15:55] Query: tell me on basis of schedule date and grn date. i want to track % of on time delivery.
+Top 20 Initial: Purchase.POItemScheduleDetail, Inventory.IndentRequisitionItemScheduleDetail, Inventory.GRNMain, masterdata.mCompanyMaster, Inventory.GRNItemIndentDetail, Purchase.POMain, Inventory.GRNItemDetail, masterdata.mStateMaster, Purchase.POAmendmentMain, Inventory.GRNItemTaxDetail, Inventory.GRNIndentReserveDetail, Security.Login, masterdata.mItemMaster, GateEntry.InvGateEntryItemDetail, Inventory.GRNTaxDetail, Purchase.POItemLRate, Inventory.IndentMain, masterdata.mSubGroupMaster, Purchase.POIndentDetail, Purchase.POAmendmentItemScheduleDetail
+Top 8 Final:   Inventory.GRNMain, Inventory.GRNItemDetail, Inventory.IndentRequisitionItemScheduleDetail, Purchase.POItemScheduleDetail, Inventory.GRNItemIndentDetail, Purchase.POAmendmentItemScheduleDetail, Inventory.GRNIndentReserveDetail, Purchase.POItemLRate
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:16:07
+Query: tell me on basis of schedule date and grn date. i want to track % of on time delivery.
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'To calculate the percentage of on-time d...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:16:10
+Query: tell me on basis of schedule date and grn date. i want to track % of on time delivery.
+Generated SQL:
+WITH PO_Schedules AS (
+    -- Get total scheduled quantity per PO item
+    SELECT 
+        PONo, 
+        ItemNo, 
+        MakeNo, 
+        ScheduleDate, 
+        SUM(ScheduleQty) AS TotalScheduledQty
+    FROM Purchase.POItemScheduleDetail
+    GROUP BY PONo, ItemNo, MakeNo, ScheduleDate
+),
+GRN_Receipts AS (
+    -- Get actual received quantity per PO item linked via POAmendment
+    SELECT 
+        PAM.PONo, 
+        GID.ItemNo, 
+        GID.MakeNo, 
+        GM.DocumentDate AS GRNDate, 
+        SUM(GID.ReceivedQty) AS TotalReceivedQty
+    FROM Inventory.GRNItemDetail GID
+    JOIN Inventory.GRNMain GM ON GID.GRNNo = GM.GRNNo
+    JOIN Purchase.POAmendmentMain PAM ON GID.POAmendmentNo = PAM.POAmendmentNo
+    GROUP BY PAM.PONo, GID.ItemNo, GID.MakeNo, GM.DocumentDate
+)
+SELECT 
+    SUM(CASE WHEN GR.GRNDate <= PS.ScheduleDate THEN GR.TotalReceivedQty ELSE 0 END) AS OnTimeQty,
+    SUM(GR.TotalReceivedQty) AS TotalReceivedQty,
+    (SUM(CASE WHEN GR.GRNDate <= PS.ScheduleDate THEN GR.TotalReceivedQty ELSE 0 END) * 100.0 / NULLIF(SUM(GR.TotalReceivedQty), 0)) AS OnTimeDeliveryPercentage
+FROM PO_Schedules PS
+JOIN GRN_Receipts GR ON PS.PONo = GR.PONo 
+    AND PS.ItemNo = GR.ItemNo 
+    AND PS.MakeNo = GR.MakeNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:17:48] Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule  Date and GRN Date
+Top 20 Initial: Purchase.POAmendmentItemScheduleDetail, Inventory.GRNItemDetail, Purchase.POAmendmentMain, Purchase.POAmendmentItemDetail, Purchase.POAmendmentItemLRate, Inventory.GRNItemIndentDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentIndentDetail, GateEntry.InvGateEntryOrderDetail, GateEntry.InvGateEntryItemDetail, Purchase.POItemScheduleDetail, masterdata.mVendorLocationDetail, Purchase.POAmendmentTaxDetail, Purchase.POExpenseHead, Inventory.GRNMain, Purchase.POAmendmentItemTaxDetail, Purchase.POMain, Purchase.POIndentDetail, Purchase.POAmendmentTermsNConditionDetail
+Top 8 Final:   Purchase.POAmendmentMain, Purchase.POAmendmentItemScheduleDetail, masterdata.mVendorLocationDetail, Inventory.GRNMain, Purchase.POMain, Purchase.POAmendmentIndentDetail, Inventory.GRNItemDetail, Purchase.POAmendmentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:18:00
+Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule  Date and GRN Date
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorSchedules AS (\n    -- Get...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:18:03
+Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule  Date and GRN Date
+Generated SQL:
+WITH VendorSchedules AS (
+    SELECT 
+        PAM.PONo,
+        PAISD.ItemNo,
+        PAISD.MakeNo,
+        PAISD.ScheduleDate,
+        SUM(PAISD.ScheduleQty) AS TotalScheduledQty
+    FROM Purchase.POAmendmentItemScheduleDetail PAISD
+    JOIN Purchase.POAmendmentMain PAM ON PAISD.POAmendmentNo = PAM.POAmendmentNo
+    WHERE PAM.VendorLocationNo = 3598
+      AND PAISD.ScheduleDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY PAM.PONo, PAISD.ItemNo, PAISD.MakeNo, PAISD.ScheduleDate
+),
+VendorGRNs AS (
+    SELECT 
+        PAM.PONo,
+        GID.ItemNo,
+        GID.MakeNo,
+        GM.DocumentDate AS GRNDate,
+        SUM(GID.ReceivedQty) AS TotalReceivedQty
+    FROM Inventory.GRNItemDetail GID
+    JOIN Inventory.GRNMain GM ON GID.GRNNo = GM.GRNNo
+    JOIN Purchase.POAmendmentMain PAM ON GID.POAmendmentNo = PAM.POAmendmentNo
+    WHERE GM.VendorLocationNo = 3598
+      AND GM.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY PAM.PONo, GID.ItemNo, GID.MakeNo, GM.DocumentDate
+)
+SELECT 
+    SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) AS OnTimeQty,
+    SUM(VG.TotalReceivedQty) AS TotalReceivedQty,
+    (SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) * 100.0 / NULLIF(SUM(VG.TotalReceivedQty), 0)) AS OnTimeDeliveryPercentage
+FROM VendorSchedules VS
+JOIN VendorGRNs VG ON VS.PONo = VG.PONo 
+    AND VS.ItemNo = VG.ItemNo 
+    AND VS.MakeNo = VG.MakeNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:22:37] Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule Date and GRN Date. Make can be null so you need to manage it in sql join
+Top 20 Initial: Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentItemLRate, Purchase.POItemScheduleDetail, Purchase.POAmendmentItemDetail, Purchase.POAmendmentMain, Purchase.POAmendmentExpenseHead, Inventory.GRNItemDetail, masterdata.mWarehouse, Purchase.POAmendmentIndentDetail, Purchase.POAmendmentItemTaxDetail, Purchase.POAmendmentPaymentTermsDetail, Purchase.POItemLRate, Inventory.GRNItemIndentDetail, Purchase.POExpenseHead, GateEntry.InvGateEntryItemDetail, Inventory.IndentRequisitionItemScheduleDetail, Purchase.POIndentDetail, Purchase.POMain, GateEntry.InvGateEntryOrderDetail, Purchase.POAmendmentTaxDetail
+Top 8 Final:   Purchase.POAmendmentItemScheduleDetail, Purchase.POAmendmentMain, Purchase.POAmendmentExpenseHead, Purchase.POAmendmentItemLRate, Purchase.POAmendmentIndentDetail, Inventory.GRNItemDetail, Purchase.POMain, Purchase.POAmendmentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:22:49
+Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule Date and GRN Date. Make can be null so you need to manage it in sql join
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorSchedules AS (\n    SELECT...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:22:52
+Query: give me on time delivery % of vendorLocationNo 3598 for last 10 months. Delivery will checked on basis of POAmendmentITemSchedule Date and GRN Date. Make can be null so you need to manage it in sql join
+Generated SQL:
+WITH VendorSchedules AS (
+    SELECT 
+        PAM.POAmendmentNo,
+        PAISD.ItemNo,
+        PAISD.MakeNo,
+        PAISD.ScheduleDate,
+        SUM(PAISD.ScheduleQty) AS TotalScheduledQty
+    FROM Purchase.POAmendmentItemScheduleDetail PAISD
+    JOIN Purchase.POAmendmentMain PAM ON PAISD.POAmendmentNo = PAM.POAmendmentNo
+    WHERE PAM.VendorLocationNo = 3598
+      AND PAISD.ScheduleDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY PAM.POAmendmentNo, PAISD.ItemNo, PAISD.MakeNo, PAISD.ScheduleDate
+),
+VendorGRNs AS (
+    SELECT 
+        GID.POAmendmentNo,
+        GID.ItemNo,
+        GID.MakeNo,
+        GM.DocumentDate AS GRNDate,
+        SUM(GID.ReceivedQty) AS TotalReceivedQty
+    FROM Inventory.GRNItemDetail GID
+    JOIN Inventory.GRNMain GM ON GID.GRNNo = GM.GRNNo
+    WHERE GM.VendorLocationNo = 3598
+      AND GM.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY GID.POAmendmentNo, GID.ItemNo, GID.MakeNo, GM.DocumentDate
+)
+SELECT 
+    SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) AS OnTimeQty,
+    SUM(VG.TotalReceivedQty) AS TotalReceivedQty,
+    (SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) * 100.0 / NULLIF(SUM(VG.TotalReceivedQty), 0)) AS OnTimeDeliveryPercentage
+FROM VendorSchedules VS
+JOIN VendorGRNs VG ON VS.POAmendmentNo = VG.POAmendmentNo 
+    AND VS.ItemNo = VG.ItemNo 
+    AND (VS.MakeNo = VG.MakeNo OR (VS.MakeNo IS NULL AND VG.MakeNo IS NULL));
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:23:51] Query: tell me vendorLocationNo who is having worst delivery % in last 10 month. Give me 10 vendor and % too.
+Top 20 Initial: masterdata.mVendorLocationDetail, GateEntry.InvGateEntryOrderDetail, masterdata.mLocationMaster, Finance.PurchaseBillMain, Finance.PurchaseBillTaxConcessionFormDetail, Purchase.POExpenseHead, Purchase.POMain, Purchase.POAmendmentMain, Inventory.GRNMain, masterdata.mWarehouse, Inventory.GRNItemIndentDetail, masterdata.mSubGroupMaster, GateEntry.InvGateEntryMain, Purchase.POAmendmentExpenseHead, Purchase.POItemDetail, masterdata.mVendorCard, masterdata.mMakeMaster, masterdata.mStateMaster, Security.Login, Inventory.IndentRequisitionMain
+Top 8 Final:   masterdata.mVendorLocationDetail, Inventory.GRNMain, GateEntry.InvGateEntryMain, Purchase.POMain, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Finance.PurchaseBillTaxConcessionFormDetail, masterdata.mWarehouse
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:24:04
+Query: tell me vendorLocationNo who is having worst delivery % in last 10 month. Give me 10 vendor and % too.
+Generated SQL:
+WITH VendorSchedules AS (
+    SELECT
+        PAM.VendorLocationNo,
+        PAISD.POAmendmentNo,
+        PAISD.ItemNo,
+        PAISD.MakeNo,
+        PAISD.ScheduleDate,
+        SUM(PAISD.ScheduleQty) AS TotalScheduledQty
+    FROM Purchase.POAmendmentItemScheduleDetail PAISD
+    JOIN Purchase.POAmendmentMain PAM ON PAISD.POAmendmentNo = PAM.POAmendmentNo
+    WHERE PAISD.ScheduleDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY PAM.VendorLocationNo, PAISD.POAmendmentNo, PAISD.ItemNo, PAISD.MakeNo, PAISD.ScheduleDate
+),
+VendorGRNs AS (
+    SELECT
+        GM.VendorLocationNo,
+        GID.POAmendmentNo,
+        GID.ItemNo,
+        GID.MakeNo,
+        GM.DocumentDate AS GRNDate,
+        SUM(GID.ReceivedQty) AS TotalReceivedQty
+    FROM Inventory.GRNItemDetail GID
+    JOIN Inventory.GRNMain GM ON GID.GRNNo = GM.GRNNo
+    WHERE GM.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY GM.VendorLocationNo, GID.POAmendmentNo, GID.ItemNo, GID.MakeNo, GM.DocumentDate
+)
+SELECT TOP 10
+    VS.VendorLocationNo,
+    (SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) * 100.0 / NULLIF(SUM(VG.TotalReceivedQty), 0)) AS OnTimeDeliveryPercentage
+FROM VendorSchedules VS
+JOIN VendorGRNs VG ON VS.VendorLocationNo = VG.VendorLocationNo
+    AND VS.POAmendmentNo = VG.POAmendmentNo
+    AND VS.ItemNo = VG.ItemNo
+    AND (VS.MakeNo = VG.MakeNo OR (VS.MakeNo IS NULL AND VG.MakeNo IS NULL))
+GROUP BY VS.VendorLocationNo
+ORDER BY OnTimeDeliveryPercentage ASC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:25:03] Query: tell me vendorLocationNo who is having worst delivery % in last 10 month. Give me 10 vendor and % too. Consider only those purchase order for which statusno is 2
+Top 20 Initial: masterdata.mVendorLocationDetail, masterdata.mLocationMaster, Inventory.GRNItemIndentDetail, masterdata.mSubGroupMaster, Finance.PurchaseBillMain, Purchase.POMain, Purchase.POExpenseHead, GateEntry.InvGateEntryOrderDetail, Finance.PurchaseBillTaxConcessionFormDetail, Inventory.GRNMain, Purchase.POAmendmentMain, masterdata.mWarehouse, Purchase.POItemDetail, Purchase.POAmendmentExpenseHead, masterdata.mMakeMaster, Purchase.POIndentDetail, GateEntry.InvGateEntryMain, masterdata.mStateMaster, Finance.PurchaseBillAdvanceDetail, masterdata.mCityMaster
+Top 8 Final:   Purchase.POMain, masterdata.mVendorLocationDetail, Purchase.POAmendmentMain, Finance.PurchaseBillMain, Inventory.GRNMain, masterdata.mWarehouse, Finance.PurchaseBillTaxConcessionFormDetail, GateEntry.InvGateEntryMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:25:16
+Query: tell me vendorLocationNo who is having worst delivery % in last 10 month. Give me 10 vendor and % too. Consider only those purchase order for which statusno is 2
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorSchedules AS (\n    SELECT...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:25:19
+Query: tell me vendorLocationNo who is having worst delivery % in last 10 month. Give me 10 vendor and % too. Consider only those purchase order for which statusno is 2
+Generated SQL:
+WITH VendorSchedules AS (
+    SELECT
+        PAM.VendorLocationNo,
+        PAISD.POAmendmentNo,
+        PAISD.ItemNo,
+        PAISD.MakeNo,
+        PAISD.ScheduleDate,
+        SUM(PAISD.ScheduleQty) AS TotalScheduledQty
+    FROM Purchase.POAmendmentItemScheduleDetail PAISD
+    JOIN Purchase.POAmendmentMain PAM ON PAISD.POAmendmentNo = PAM.POAmendmentNo
+    WHERE PAM.StatusNo = 2
+      AND PAISD.ScheduleDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY PAM.VendorLocationNo, PAISD.POAmendmentNo, PAISD.ItemNo, PAISD.MakeNo, PAISD.ScheduleDate
+),
+VendorGRNs AS (
+    SELECT
+        GM.VendorLocationNo,
+        GID.POAmendmentNo,
+        GID.ItemNo,
+        GID.MakeNo,
+        GM.DocumentDate AS GRNDate,
+        SUM(GID.ReceivedQty) AS TotalReceivedQty
+    FROM Inventory.GRNItemDetail GID
+    JOIN Inventory.GRNMain GM ON GID.GRNNo = GM.GRNNo
+    JOIN Purchase.POAmendmentMain PAM ON GID.POAmendmentNo = PAM.POAmendmentNo
+    WHERE PAM.StatusNo = 2
+      AND GM.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY GM.VendorLocationNo, GID.POAmendmentNo, GID.ItemNo, GID.MakeNo, GM.DocumentDate
+)
+SELECT TOP 10
+    VS.VendorLocationNo,
+    (SUM(CASE WHEN VG.GRNDate <= VS.ScheduleDate THEN VG.TotalReceivedQty ELSE 0 END) * 100.0 / NULLIF(SUM(VG.TotalReceivedQty), 0)) AS OnTimeDeliveryPercentage
+FROM VendorSchedules VS
+JOIN VendorGRNs VG ON VS.VendorLocationNo = VG.VendorLocationNo
+    AND VS.POAmendmentNo = VG.POAmendmentNo
+    AND VS.ItemNo = VG.ItemNo
+    AND (VS.MakeNo = VG.MakeNo OR (VS.MakeNo IS NULL AND VG.MakeNo IS NULL))
+GROUP BY VS.VendorLocationNo
+ORDER BY OnTimeDeliveryPercentage ASC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:53:45] Query: give me the department wise spent analytics for the last 1 month
+Top 20 Initial: Purchase.POExpenseHead, Security.Login, payroll.tblDeptMaster, masterdata.mCountryMaster, Inventory.IndentMain, masterdata.mLocationMaster, Purchase.POAmendmentExpenseHead, masterdata.mMakeMaster, Finance.PurchaseBillMain, masterdata.mFYear, Purchase.POAmendmentMain, masterdata.mCategoryMaster, Finance.PurchaseBillAdvanceDetail, Inventory.IndentRequisitionItemDetail, Inventory.IndentRequisitionMain, masterdata.mUnitMaster, Purchase.POMain, Purchase.POAmendmentItemTaxDetail, payroll.tblDivisionMaster, Finance.PurchaseBillNotesDetail
+Top 8 Final:   payroll.tblDeptMaster, Purchase.POMain, payroll.tblDivisionMaster, Inventory.IndentMain, Purchase.POAmendmentMain, Inventory.IndentRequisitionMain, Finance.PurchaseBillAdvanceDetail, masterdata.mFYear
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-01 17:53:57
+Query: give me the department wise spent analytics for the last 1 month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH LatestPOData AS (\n    -- Select...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:54:01
+Query: give me the department wise spent analytics for the last 1 month
+Generated SQL:
+SELECT 
+    d.DeptName, 
+    SUM(po.NetAmount) AS TotalSpent
+FROM Purchase.POMain po
+JOIN payroll.tblDeptMaster d ON po.DeptNo = d.DeptNo
+WHERE po.DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY d.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-01 17:57:30] Query: give me the department wise spent analytics for the last 1 month
+Top 20 Initial: Purchase.POExpenseHead, Security.Login, payroll.tblDeptMaster, masterdata.mCountryMaster, Inventory.IndentMain, masterdata.mLocationMaster, Purchase.POAmendmentExpenseHead, masterdata.mMakeMaster, Finance.PurchaseBillMain, masterdata.mFYear, Purchase.POAmendmentMain, masterdata.mCategoryMaster, Finance.PurchaseBillAdvanceDetail, Inventory.IndentRequisitionItemDetail, Inventory.IndentRequisitionMain, masterdata.mUnitMaster, Purchase.POMain, Purchase.POAmendmentItemTaxDetail, payroll.tblDivisionMaster, Finance.PurchaseBillNotesDetail
+Top 8 Final:   payroll.tblDeptMaster, Purchase.POMain, payroll.tblDivisionMaster, Inventory.IndentMain, Purchase.POAmendmentMain, Inventory.IndentRequisitionMain, Finance.PurchaseBillAdvanceDetail, masterdata.mFYear
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-01 17:57:41
+Query: give me the department wise spent analytics for the last 1 month
+Generated SQL:
+SELECT
+  tdm.DeptName,
+  SUM(pom.NetAmount) AS TotalSpent
+FROM Purchase.POMain AS pom
+INNER JOIN payroll.tblDeptMaster AS tdm
+  ON pom.DeptNo = tdm.DeptNo
+WHERE
+  pom.DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  tdm.DeptName
+ORDER BY
+  TotalSpent DESC;
+Status: SUCCESS
+------------------------------------------------------------

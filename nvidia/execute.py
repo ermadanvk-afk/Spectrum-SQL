@@ -1,31 +1,49 @@
-from connect import get_connection, close_connection
+from connect import get_engine
+from sqlalchemy import text
+import contextlib
 
-def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 5) -> tuple[list[str], list[dict]]:
-    own_connection = False
+def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 15) -> tuple[list[str], list[dict]]:
     try:
         if connection is None:
             if not connection_string:
                 raise ValueError("Either connection_string or connection must be provided")
-            connection = get_connection(connection_string)
-            own_connection = True
+            engine = get_engine(connection_string)
+            conn_context = engine.connect()
+        else:
+            @contextlib.contextmanager
+            def dummy_context(c):
+                yield c
+            conn_context = dummy_context(connection)
             
-        connection.timeout = timeout_seconds
-        cursor = connection.cursor()
-        
-        cursor.execute(sql)
-        column_names = [column[0] for column in cursor.description]
-        rows = cursor.fetchall()
-        
-        rows_as_list_of_dicts = []
-        for row in rows:
-            rows_as_list_of_dicts.append(dict(zip(column_names, row)))
+        with conn_context as conn:
+            # Enforce execution timeout on the underlying pyodbc connection
+            try:
+                raw_conn = conn.connection.dbapi_connection
+                if hasattr(raw_conn, 'timeout'):
+                    raw_conn.timeout = timeout_seconds
+            except Exception:
+                pass
+                
+            # SQLAlchemy connection execution
+            result = conn.execute(text(sql))
+            
+            # Extract column names
+            column_names = list(result.keys())
+            
+            # Fetch all rows
+            rows = result.fetchmany(3000)
+            
+            # Convert to list of dictionaries
+            rows_as_list_of_dicts = []
+            for row in rows:
+                if hasattr(row, '_mapping'):
+                    rows_as_list_of_dicts.append(dict(row._mapping))
+                else:
+                    rows_as_list_of_dicts.append(dict(zip(column_names, row)))
             
         return (column_names, rows_as_list_of_dicts)
     except Exception as e:
         raise RuntimeError(f"Database execution error: {e}\n\nFAILED SQL:\n{sql}")
-    finally:
-        if own_connection and connection is not None:
-            close_connection(connection)
 
 if __name__ == "__main__":
     import os

@@ -1,21 +1,31 @@
-import pyodbc
+import urllib.parse
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
-def get_connection(connection_string: str) -> pyodbc.Connection:
-    try:
-        connection = pyodbc.connect(connection_string, autocommit=False)
-        return connection
-    except Exception as e:
-        raise RuntimeError(f"Failed to connect to database: {e}")
+_engine = None
 
-def close_connection(connection: pyodbc.Connection) -> None:
-    try:
-        connection.close()
-    except Exception:
-        pass
+def get_engine(connection_string: str) -> Engine:
+    global _engine
+    if _engine is None:
+        try:
+            params = urllib.parse.quote_plus(connection_string)
+            # Create a SQLAlchemy engine for SQL Server via pyodbc
+            engine_url = f"mssql+pyodbc:///?odbc_connect={params}"
+            _engine = create_engine(
+                engine_url,
+                pool_size=5,         # Number of connections to keep open
+                max_overflow=10,     # Max extra connections if pool is full
+                pool_pre_ping=True,  # Test connection before using it
+                pool_recycle=3600    # Recreate connections every hour
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to create database engine: {e}")
+    return _engine
 
 if __name__ == "__main__":
     import os
     from dotenv import load_dotenv
+    from sqlalchemy import text
     
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     load_dotenv(env_path)
@@ -24,10 +34,11 @@ if __name__ == "__main__":
     if not conn_str:
         print("ERROR: DB_CONNECTION_STRING not found in .env")
     else:
-        print(f"Attempting to connect with:\n{conn_str}\n")
+        print(f"Attempting to connect with SQLAlchemy:\n{conn_str}\n")
         try:
-            conn = get_connection(conn_str)
-            print("[+] SUCCESS! Successfully connected to the database!")
-            close_connection(conn)
+            engine = get_engine(conn_str)
+            with engine.connect() as conn:
+                result = conn.execute(text("SELECT 1"))
+                print(f"[+] SUCCESS! Successfully connected to the database! Test query returned: {result.scalar()}")
         except Exception as e:
             print(f"[X] FAILED to connect.\nError Details: {e}")

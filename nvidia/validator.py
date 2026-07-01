@@ -29,7 +29,7 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
     load_dotenv(env_path)
     conn_str = os.getenv("DB_CONNECTION_STRING")
     
-    from connect import get_connection, close_connection
+    from connect import get_engine
     
     for attempt in range(max_retries + 1):
         try:
@@ -38,9 +38,10 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             
             # 2. Database Dry-Run (Schema & Column validation)
             if conn_str and conn_str != "your_sql_server_connection_string":
-                connection = get_connection(conn_str)
+                engine = get_engine(conn_str)
+                raw_conn = engine.raw_connection()
                 try:
-                    cursor = connection.cursor()
+                    cursor = raw_conn.cursor()
                     # SET FMTONLY ON compiles the query and verifies columns/tables without returning rows
                     cursor.execute("SET FMTONLY ON")
                     cursor.execute(current_sql)
@@ -49,7 +50,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                 finally:
                     # Always ensure FMTONLY is turned off before returning the connection to the pool
                     cursor.execute("SET FMTONLY OFF")
-                    close_connection(connection)
+                    cursor.close()
+                    raw_conn.close() # Returns the connection to the pool
                     
             import time
             log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
