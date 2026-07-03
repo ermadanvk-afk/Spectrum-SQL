@@ -51,7 +51,7 @@ def store_chunks_to_vector_db() -> None:
     client = initialize_vector_store()
 
     print("Fetching data from sheets...")
-    schema_df = get_df("Sheet6")
+    schema_df = get_df("views")
     rules_df = get_df("Sheet7")
     # Switched to Sheet4 to match what load_df.py uses for Sample Queries
     queries_df = get_df("Sheet8")

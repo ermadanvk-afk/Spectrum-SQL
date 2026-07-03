@@ -1245,3 +1245,306 @@ ORDER BY
   TotalSpent DESC;
 Status: SUCCESS
 ------------------------------------------------------------
+[2026-07-02 18:35:07] Query: give me all the details of the po placed last month
+Top 20 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_IndentMain, Inventory.vw_ai_GrnMain
+Top 8 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_IndentMain, Inventory.vw_ai_GrnMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:35:17
+Query: give me all the details of the po placed last month
+Generated SQL:
+SELECT
+  *
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:38:39] Query: give me all the details of the po placed last month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:38:47
+Query: give me all the details of the po placed last month
+Generated SQL:
+SELECT
+  *
+FROM Purchase.vw_ai_POMain
+WHERE
+  CreatedDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND CreatedDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:39:31] Query: give me the last 1 month purchase trends
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:39:36
+Query: give me the last 1 month purchase trends
+Generated SQL:
+SELECT
+  CAST(POMain.DocumentDate AS DATE) AS PurchaseDate,
+  COUNT(DISTINCT POMain.PONo) AS NumberOfPurchases,
+  SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, -1, GETDATE())
+  AND POMain.DocumentDate <= GETDATE()
+GROUP BY
+  CAST(POMain.DocumentDate AS DATE)
+ORDER BY
+  PurchaseDate;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:46:42] Query: give me all the details of the po placed last month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:46:50
+Query: give me all the details of the po placed last month
+Generated SQL:
+SELECT
+  *
+FROM Purchase.vw_ai_POMain
+WHERE
+  CreatedDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND CreatedDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:48:07] Query: Give top 10 Item for which item rate has been increased by 50% in last 10 months.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-02 18:48:19
+Query: Give top 10 Item for which item rate has been increased by 50% in last 10 months.
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH ItemPurchaseData AS (\n    -- Se...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:48:21
+Query: Give top 10 Item for which item rate has been increased by 50% in last 10 months.
+Generated SQL:
+WITH ItemRateHistory AS (
+    SELECT 
+        pid.ItemNo,
+        pid.ItemDescription,
+        pid.Rate,
+        pm.DocumentDate,
+        ROW_NUMBER() OVER (PARTITION BY pid.ItemNo ORDER BY pm.DocumentDate ASC) as FirstRateRank,
+        ROW_NUMBER() OVER (PARTITION BY pid.ItemNo ORDER BY pm.DocumentDate DESC) as LastRateRank
+    FROM Purchase.vw_ai_POItemDetail pid
+    JOIN Purchase.vw_ai_POMain pm ON pid.PONo = pm.PONo
+    WHERE pm.DocumentDate >= DATEADD(month, -10, GETDATE())
+)
+SELECT TOP 10
+    curr.ItemNo,
+    curr.ItemDescription,
+    first.Rate AS OldRate,
+    curr.Rate AS NewRate,
+    ((curr.Rate - first.Rate) / NULLIF(first.Rate, 0)) * 100 AS PercentageIncrease
+FROM ItemRateHistory curr
+JOIN ItemRateHistory first ON curr.ItemNo = first.ItemNo
+WHERE curr.LastRateRank = 1 
+  AND first.FirstRateRank = 1
+  AND curr.Rate >= (first.Rate * 1.5)
+ORDER BY PercentageIncrease DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:49:59] Query: Give me last 5 purchase order for item no 12843 in last 10 months
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:50:05
+Query: Give me last 5 purchase order for item no 12843 in last 10 months
+Generated SQL:
+SELECT TOP 5
+    pm.PONo,
+    pm.DocumentNoYearly,
+    pm.DocumentDate,
+    pid.ItemNo,
+    pid.ItemDescription,
+    pid.Quantity,
+    pid.Rate,
+    pid.NetAmount
+FROM Purchase.vw_ai_POMain AS pm
+JOIN Purchase.vw_ai_POItemDetail AS pid
+    ON pm.PONo = pid.PONo
+WHERE
+    pid.ItemNo = 12843
+    AND pm.DocumentDate >= DATEADD(month, -10, GETDATE())
+ORDER BY
+    pm.DocumentDate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:51:30] Query: Give me vendor name for both po no (82771,77617)
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:51:34
+Query: Give me vendor name for both po no (82771,77617)
+Generated SQL:
+SELECT
+    PONo,
+    VendorName
+FROM
+    Purchase.vw_ai_POMain
+WHERE
+    PONo IN (82771, 77617);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:52:19] Query: Give me last 5 purchase order for item no 29294  in last 10 months. Give Vendor NAme too.
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:52:24
+Query: Give me last 5 purchase order for item no 29294  in last 10 months. Give Vendor NAme too.
+Generated SQL:
+SELECT TOP 5
+    pm.PONo,
+    pm.DocumentNoYearly,
+    pm.DocumentDate,
+    pm.VendorName,
+    pid.ItemNo,
+    pid.ItemDescription,
+    pid.Quantity,
+    pid.Rate,
+    pid.NetAmount
+FROM Purchase.vw_ai_POMain AS pm
+JOIN Purchase.vw_ai_POItemDetail AS pid
+    ON pm.PONo = pid.PONo
+WHERE
+    pid.ItemNo = 29294
+    AND pm.DocumentDate >= DATEADD(month, -10, GETDATE())
+ORDER BY
+    pm.DocumentDate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:55:42] Query: Tell me purchase order which is having maximum number of item in last 10 months.
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:55:47
+Query: Tell me purchase order which is having maximum number of item in last 10 months.
+Generated SQL:
+SELECT TOP 1
+    pm.PONo,
+    pm.DocumentNoYearly,
+    pm.DocumentDate,
+    pm.VendorName,
+    COUNT(pid.POItemDetailNo) AS NumberOfItems
+FROM
+    Purchase.vw_ai_POMain AS pm
+JOIN
+    Purchase.vw_ai_POItemDetail AS pid
+    ON pm.PONo = pid.PONo
+WHERE
+    pm.DocumentDate >= DATEADD(month, -10, GETDATE())
+GROUP BY
+    pm.PONo,
+    pm.DocumentNoYearly,
+    pm.DocumentDate,
+    pm.VendorName
+ORDER BY
+    NumberOfItems DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:57:02] Query: Tell me month wise average po authorization Time for purchase order in last 10 month. Authorization time means difference between createdDate and authorizeddate.
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:57:10
+Query: Tell me month wise average po authorization Time for purchase order in last 10 month. Authorization time means difference between createdDate and authorizeddate.
+Generated SQL:
+SELECT
+    FORMAT(pm.CreatedDate, 'yyyy-MM') AS MonthYear,
+    AVG(DATEDIFF(minute, pm.CreatedDate, pm.AuthorizedDate)) AS AverageAuthorizationTimeInMinutes
+FROM
+    Purchase.vw_ai_POMain AS pm
+WHERE
+    pm.CreatedDate >= DATEADD(month, -10, GETDATE())
+    AND pm.AuthorizedDate IS NOT NULL
+    AND pm.AuthorizedDate >= pm.CreatedDate -- Ensure authorization date is not before creation date
+GROUP BY
+    FORMAT(pm.CreatedDate, 'yyyy-MM')
+ORDER BY
+    MonthYear;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:57:31] Query: Give me Avg in days
+Top 4 Initial: Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:57:36
+Query: Give me Avg in days
+Generated SQL:
+SELECT
+    FORMAT(pm.CreatedDate, 'yyyy-MM') AS MonthYear,
+    AVG(DATEDIFF(day, pm.CreatedDate, pm.AuthorizedDate)) AS AverageAuthorizationTimeInDays
+FROM
+    Purchase.vw_ai_POMain AS pm
+WHERE
+    pm.CreatedDate >= DATEADD(month, -10, GETDATE())
+    AND pm.AuthorizedDate IS NOT NULL
+    AND pm.AuthorizedDate >= pm.CreatedDate -- Ensure authorization date is not before creation date
+GROUP BY
+    FORMAT(pm.CreatedDate, 'yyyy-MM')
+ORDER BY
+    MonthYear;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:58:46] Query: Tell me how many po authorized in same day in each month and tell me the % of it as compare to total no of po of that month.
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:58:55
+Query: Tell me how many po authorized in same day in each month and tell me the % of it as compare to total no of po of that month.
+Generated SQL:
+SELECT
+    FORMAT(pm.CreatedDate, 'yyyy-MM') AS MonthYear,
+    COUNT(pm.PONo) AS TotalPOsInMonth,
+    SUM(CASE
+            WHEN pm.AuthorizedDate IS NOT NULL AND DATEDIFF(day, pm.CreatedDate, pm.AuthorizedDate) = 0 THEN 1
+            ELSE 0
+        END) AS SameDayAuthorizedPOs,
+    CAST(SUM(CASE
+                WHEN pm.AuthorizedDate IS NOT NULL AND DATEDIFF(day, pm.CreatedDate, pm.AuthorizedDate) = 0 THEN 1
+                ELSE 0
+            END) AS DECIMAL(10, 2)) * 100.0 / COUNT(pm.PONo) AS PercentageSameDayAuthorized
+FROM
+    Purchase.vw_ai_POMain AS pm
+WHERE
+    pm.CreatedDate IS NOT NULL -- Ensure creation date exists for grouping
+GROUP BY
+    FORMAT(pm.CreatedDate, 'yyyy-MM')
+ORDER BY
+    MonthYear;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-02 18:59:24] Query: Give me in for last 10 month only
+Top 4 Initial: Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-02 18:59:29
+Query: Give me in for last 10 month only
+Generated SQL:
+SELECT
+    FORMAT(pm.CreatedDate, 'yyyy-MM') AS MonthYear,
+    COUNT(pm.PONo) AS TotalPOsInMonth,
+    SUM(CASE
+            WHEN pm.AuthorizedDate IS NOT NULL AND DATEDIFF(day, pm.CreatedDate, pm.AuthorizedDate) = 0 THEN 1
+            ELSE 0
+        END) AS SameDayAuthorizedPOs,
+    CAST(SUM(CASE
+                WHEN pm.AuthorizedDate IS NOT NULL AND DATEDIFF(day, pm.CreatedDate, pm.AuthorizedDate) = 0 THEN 1
+                ELSE 0
+            END) AS DECIMAL(10, 2)) * 100.0 / COUNT(pm.PONo) AS PercentageSameDayAuthorized
+FROM
+    Purchase.vw_ai_POMain AS pm
+WHERE
+    pm.CreatedDate >= DATEADD(month, -10, GETDATE()) -- Filter for the last 10 months
+    AND pm.CreatedDate IS NOT NULL -- Ensure creation date exists for grouping
+GROUP BY
+    FORMAT(pm.CreatedDate, 'yyyy-MM')
+ORDER BY
+    MonthYear;
+Status: SUCCESS
+------------------------------------------------------------

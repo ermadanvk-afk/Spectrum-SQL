@@ -83,8 +83,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
     )
     
     if chunk_type == "table":
-        fetch_k = 20
-        top_k = 8
+        fetch_k = 4
+        top_k = 4
     else:
         fetch_k = top_k
     

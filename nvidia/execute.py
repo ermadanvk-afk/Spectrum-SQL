@@ -2,7 +2,7 @@ from connect import get_engine
 from sqlalchemy import text
 import contextlib
 
-def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 15) -> tuple[list[str], list[dict]]:
+def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 45) -> tuple[list[str], list[dict]]:
     try:
         if connection is None:
             if not connection_string:
