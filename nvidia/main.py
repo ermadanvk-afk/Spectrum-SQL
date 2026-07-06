@@ -16,6 +16,7 @@ from expense import calculate_cost
 from embedder import get_m3_model
 import pandas as pd
 from analytics.analyzer import generate_analytical_summary
+from analytics.analyzer_v2 import generate_visual_summary
 
 from dotenv import load_dotenv
 
@@ -165,6 +166,15 @@ async def analyze_data(request_model: AnalyzeDataRequest):
     result = await generate_analytical_summary(df, request_model.query)
     return result
 
+@app.post("/api/analyze_v2")
+async def analyze_data_v2(request_model: AnalyzeDataRequest):
+    if not request_model.data:
+        return {"status": "error", "type": "error", "content": "No data provided for visual analysis."}
+        
+    df = pd.DataFrame(request_model.data)
+    result = await generate_visual_summary(df, request_model.query)
+    return result
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host= "localhost", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

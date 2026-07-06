@@ -20,12 +20,15 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
     executes the pandas code, and summarizes the aggregated data.
     """
     dtypes_str = str(df.dtypes)
+    # Give the AI statistical context so it can make smart scale/chart decisions
+    describe_str = df.describe(include='all').to_string()
     prompt_path = os.path.join(os.path.dirname(__file__), "code_prompt_v2.txt")
     with open(prompt_path, "r") as f:
         code_system_prompt = f.read()
 
     code_user_prompt = (
         f"DataFrame dtypes:\n{dtypes_str}\n\n"
+        f"DataFrame statistics (df.describe()):\n{describe_str}\n\n"
         f"User Query: {user_query}\n\n"
         "Generate the required JSON output."
     )
@@ -74,7 +77,6 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
                 raise ValueError("Variable 'chart_df' was not populated by the generated code.")
             
             # Convert chart_df to list of dictionaries safely handling NaNs and Timestamps
-            import json
             chart_data = json.loads(chart_df.to_json(orient="records", date_format="iso"))
             
         except Exception as e:

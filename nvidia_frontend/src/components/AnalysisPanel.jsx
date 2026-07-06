@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, Code2, Sparkles, TerminalSquare } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Loader2, Sparkles, TerminalSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical }) => {

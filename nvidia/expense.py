@@ -10,8 +10,8 @@ def calculate_cost(input_tokens: int, output_tokens: int) -> dict:
     USD_TO_INR = 95
     
     # Cost per 1M tokens in USD
-    INPUT_COST_PER_MILLION_USD = 0.30
-    OUTPUT_COST_PER_MILLION_USD = 2.50
+    INPUT_COST_PER_MILLION_USD = 0.25
+    OUTPUT_COST_PER_MILLION_USD = 1.50
     
     input_cost_usd = (input_tokens / 1_000_000) * INPUT_COST_PER_MILLION_USD
     output_cost_usd = (output_tokens / 1_000_000) * OUTPUT_COST_PER_MILLION_USD

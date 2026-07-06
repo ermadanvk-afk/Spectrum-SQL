@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function DataTable({ data }) {
   if (!data || data.length === 0) return null;
 

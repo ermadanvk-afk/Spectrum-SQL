@@ -14,5 +14,11 @@
       "vwaiquotationmain"
     ],
     "boost_score": 10
+  },
+  "lead time": {
+    "tables": [
+      "Inventory.vw_ai_IndentMain"
+        ],
+        "boost_score":10
   }
 }

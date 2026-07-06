@@ -156,7 +156,8 @@ body {
 
 .main-content {
   flex: 1;
-  min-width: 0; /* Prevents flex container from expanding beyond screen */
+  min-width: 0;
+  /* Prevents flex container from expanding beyond screen */
   display: flex;
   flex-direction: column;
   position: relative;
@@ -185,7 +186,8 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 60px 4% 120px 4%; /* Widened padding for maximized side-by-side layout */
+  padding: 60px 4% 120px 4%;
+  /* Widened padding for maximized side-by-side layout */
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -211,13 +213,16 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-dark);
 }
+
 ::-webkit-scrollbar-thumb {
   background: #444;
   border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
@@ -359,9 +364,11 @@ body {
 .send-btn:hover {
   opacity: 0.9;
 }
+
 .send-btn:active {
   transform: scale(0.95);
 }
+
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -375,6 +382,7 @@ body {
   align-items: center;
   width: fit-content;
 }
+
 .typing-dot {
   width: 6px;
   height: 6px;
@@ -382,8 +390,14 @@ body {
   border-radius: 50%;
   animation: typing 1.4s infinite ease-in-out;
 }
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+.typing-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
 
 /* SQL Viewer Accordion */
 .sql-viewer {
@@ -492,21 +506,23 @@ body {
 }
 
 .native-table tr:hover td {
-  background-color: transparent; /* Claude tables typically don't have hover states, or very subtle */
+  background-color: transparent;
+  /* Claude tables typically don't have hover states, or very subtle */
 }
 
 /* AG Grid Dark Theme Overrides - Aggressive Dark Mode */
 .table-wrapper {
   /* Set CSS Variables for AG Grid */
   --ag-background-color: var(--bg-card) !important;
-  --ag-foreground-color: #ffffff !important; /* Bright white text */
+  --ag-foreground-color: #ffffff !important;
+  /* Bright white text */
   --ag-header-foreground-color: var(--text-muted) !important;
   --ag-header-background-color: var(--bg-dark) !important;
   --ag-row-border-color: rgba(255, 255, 255, 0.04) !important;
   --ag-border-color: rgba(255, 255, 255, 0.08) !important;
   --ag-row-hover-color: var(--bg-card-hover) !important;
   --ag-odd-row-background-color: transparent !important;
-  
+
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border-light);
@@ -537,13 +553,25 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spin {
@@ -557,11 +585,13 @@ body {
   width: 40px;
   height: 22px;
 }
-.switch input { 
+
+.switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
+
 .slider {
   position: absolute;
   cursor: pointer;
@@ -572,6 +602,7 @@ body {
   background-color: #555;
   transition: .4s;
 }
+
 .slider:before {
   position: absolute;
   content: "";
@@ -582,15 +613,19 @@ body {
   background-color: white;
   transition: .4s;
 }
-input:checked + .slider {
+
+input:checked+.slider {
   background-color: #d97757;
 }
-input:checked + .slider:before {
+
+input:checked+.slider:before {
   transform: translateX(18px);
 }
+
 .slider.round {
   border-radius: 24px;
 }
+
 .slider.round:before {
   border-radius: 50%;
 }
@@ -672,7 +707,8 @@ input:checked + .slider:before {
 .summary-content {
   background: #2a2a2a;
   color: #e5e5e5;
-  padding-bottom: 36px; /* Extra padding to prevent overlap with token counter */
+  padding-bottom: 36px;
+  /* Extra padding to prevent overlap with token counter */
 }
 
 .summary-content strong {

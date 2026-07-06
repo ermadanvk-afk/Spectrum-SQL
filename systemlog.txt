@@ -1548,3 +1548,1853 @@ ORDER BY
     MonthYear;
 Status: SUCCESS
 ------------------------------------------------------------
+[2026-07-03 12:15:30] Query: give me the top 10 highest rate items purchased last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 12:15:43
+Query: give me the top 10 highest rate items purchased last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT TOP 10\n    poid.ItemDescripti...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:15:47
+Query: give me the top 10 highest rate items purchased last month
+Generated SQL:
+SELECT TOP 10
+    poid.ItemDescription,
+    poid.Rate
+FROM Purchase.vw_ai_POItemDetail AS poid
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS pbid 
+    ON poid.PONo = pbid.PONo AND poid.ItemNo = pbid.ItemNo
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+ORDER BY poid.Rate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:19:07] Query: give me the corresponding quantity of the items as well
+Top 4 Initial: Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:19:11
+Query: give me the corresponding quantity of the items as well
+Generated SQL:
+SELECT TOP 10
+    poid.ItemDescription,
+    poid.Rate,
+    poid.Quantity
+FROM Purchase.vw_ai_POItemDetail AS poid
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS pbid 
+    ON poid.PONo = pbid.PONo AND poid.ItemNo = pbid.ItemNo
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+ORDER BY poid.Rate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:25:42] Query: give me the top 10 highest rate items purchased last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 12:25:55
+Query: give me the top 10 highest rate items purchased last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT TOP 10\n    pbi.ItemDescriptio...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:25:57
+Query: give me the top 10 highest rate items purchased last month
+Generated SQL:
+SELECT TOP 10
+    pbi.ItemDescription,
+    pbi.MakeName,
+    MAX(pbi.BasicAmount / NULLIF(pbi.Qty, 0)) AS HighestRate
+FROM Finance.vw_ai_PurchaseBillItemDetail AS pbi
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbi.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY pbi.ItemDescription, pbi.MakeName
+ORDER BY HighestRate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:26:16] Query: give me the top 10 highest rate items purchased last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 12:26:28
+Query: give me the top 10 highest rate items purchased last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT TOP 10\n    pbi.ItemDescriptio...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:26:30
+Query: give me the top 10 highest rate items purchased last month
+Generated SQL:
+SELECT TOP 10
+    pbi.ItemDescription,
+    pbi.MakeName,
+    MAX(pbi.BasicAmount / NULLIF(pbi.Qty, 0)) AS HighestRate
+FROM Finance.vw_ai_PurchaseBillItemDetail AS pbi
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbi.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY pbi.ItemDescription, pbi.MakeName
+ORDER BY HighestRate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:30:16] Query: give me the top 10 highest rate items purchased last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 12:30:29
+Query: give me the top 10 highest rate items purchased last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT TOP 10\n    poid.ItemDescripti...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:30:31
+Query: give me the top 10 highest rate items purchased last month
+Generated SQL:
+SELECT TOP 10
+    poid.ItemDescription,
+    poid.Rate
+FROM Purchase.vw_ai_POItemDetail AS poid
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS pbid 
+    ON poid.PONo = pbid.PONo AND poid.ItemNo = pbid.ItemNo
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+ORDER BY poid.Rate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:39:41] Query: give me the top 10 highest rate items purchased last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 12:39:54
+Query: give me the top 10 highest rate items purchased last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT TOP 10\n    pbi.ItemDescriptio...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:39:55
+Query: give me the top 10 highest rate items purchased last month
+Generated SQL:
+SELECT TOP 10
+    pbi.ItemDescription,
+    pbi.MakeName,
+    MAX(pbi.BasicAmount / NULLIF(pbi.Qty, 0)) AS HighestRate
+FROM Finance.vw_ai_PurchaseBillItemDetail AS pbi
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm 
+    ON pbi.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE pbm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND pbm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY pbi.ItemDescription, pbi.MakeName
+ORDER BY HighestRate DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:47:36] Query: give me the analysis of purchase order created in last 15 days, based on price, item quantity and department.
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:47:41
+Query: give me the analysis of purchase order created in last 15 days, based on price, item quantity and department.
+Generated SQL:
+SELECT
+  pom.DeptName,
+  SUM(poid.Quantity) AS TotalItemQuantity,
+  SUM(poid.NetAmount) AS TotalNetAmount
+FROM Purchase.vw_ai_POMain AS pom
+INNER JOIN Purchase.vw_ai_POItemDetail AS poid
+  ON pom.PONo = poid.PONo
+WHERE
+  pom.CreatedDate >= DATEADD(day, -15, GETDATE())
+GROUP BY
+  pom.DeptName
+ORDER BY
+  pom.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 12:48:19] Query: give me the analysis of purchase order created in last 1 month, based on price, item quantity and department.
+
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 12:48:24
+Query: give me the analysis of purchase order created in last 1 month, based on price, item quantity and department.
+
+Generated SQL:
+SELECT
+  pom.DeptName,
+  SUM(poid.Quantity) AS TotalItemQuantity,
+  SUM(poid.NetAmount) AS TotalNetAmount
+FROM Purchase.vw_ai_POMain AS pom
+INNER JOIN Purchase.vw_ai_POItemDetail AS poid
+  ON pom.PONo = poid.PONo
+WHERE
+  pom.CreatedDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  pom.DeptName
+ORDER BY
+  pom.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 13:09:44] Query: What is the total procurement spend across all departments and locations for a given fiscal quarter?
+Top 4 Initial: Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 13:09:51
+Query: What is the total procurement spend across all departments and locations for a given fiscal quarter?
+Generated SQL:
+SELECT
+  SUM(T1.NetAmount) AS TotalProcurementSpend
+FROM Purchase.vw_ai_POMain AS T1
+WHERE
+  T1.DocumentDate >= '2023-01-01' AND T1.DocumentDate < '2023-04-01';
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 13:10:56] Query: What is the overall financial impact of rejected goods versus accepted goods in the current fiscal year?
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 13:11:07
+Query: What is the overall financial impact of rejected goods versus accepted goods in the current fiscal year?
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n    SUM(ISNULL(poi.AcceptedQt...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 13:11:10
+Query: What is the overall financial impact of rejected goods versus accepted goods in the current fiscal year?
+Generated SQL:
+SELECT 
+    SUM(ISNULL(poi.AcceptedQty, 0) * ISNULL(poi.Rate, 0)) AS TotalAcceptedGoodsValue,
+    SUM((ISNULL(poi.ReceivedQty, 0) - ISNULL(poi.AcceptedQty, 0)) * ISNULL(poi.Rate, 0)) AS TotalRejectedGoodsValue
+FROM Purchase.vw_ai_POItemDetail poi
+JOIN Purchase.vw_ai_POMain pom ON poi.PONo = pom.PONo
+WHERE pom.YearName = (SELECT MAX(YearName) FROM Purchase.vw_ai_POMain);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 13:15:25] Query: What is the average lead time from purchase order creation to gate entry arrival across different procurement locations?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 13:15:36
+Query: What is the average lead time from purchase order creation to gate entry arrival across different procurement locations?
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nSELECT\n    pbid.WareHouseName AS Pro...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 13:15:38
+Query: What is the average lead time from purchase order creation to gate entry arrival across different procurement locations?
+Generated SQL:
+SELECT
+    pbid.WareHouseName AS ProcurementLocation,
+    AVG(DATEDIFF(day, pom.CreatedDate, pbm.DocumentDate)) AS AverageLeadTimeInDays
+FROM Purchase.vw_ai_POMain AS pom
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS pbid ON pom.PONo = pbid.PONo
+JOIN Finance.vw_ai_PurchaseBillMain AS pbm ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+GROUP BY pbid.WareHouseName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 13:22:34] Query: give me the buying pattern of the company in last 1 month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 13:22:46
+Query: give me the buying pattern of the company in last 1 month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\n-- Overall Buying Pattern Summary fo...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 13:22:49
+Query: give me the buying pattern of the company in last 1 month
+Generated SQL:
+SELECT 
+    COUNT(DISTINCT PBM.PurchaseBillNo) AS TotalPurchaseBills,
+    SUM(PBM.NetAmount) AS TotalNetAmountSpent,
+    AVG(PBM.NetAmount) AS AverageNetAmountPerBill,
+    COUNT(DISTINCT PBI.ItemNo) AS UniqueItemsPurchased,
+    COUNT(DISTINCT PBM.VendorNo) AS UniqueVendors
+FROM Finance.vw_ai_PurchaseBillMain AS PBM
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS PBI ON PBM.PurchaseBillNo = PBI.PurchaseBillNo
+WHERE PBM.DocumentDate >= DATEADD(month, -1, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 13:55:11] Query: give me the number of purchase order and amount for each department for last 1 month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 13:55:15
+Query: give me the number of purchase order and amount for each department for last 1 month
+Generated SQL:
+SELECT
+  pom.DeptName,
+  COUNT(pom.PONo) AS NumberOfPurchaseOrders,
+  SUM(pom.NetAmount) AS TotalAmount
+FROM Purchase.vw_ai_POMain AS pom
+WHERE
+  pom.DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  pom.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 14:54:47] Query: what is the po authorization rate in each department for the last month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 14:55:01
+Query: what is the po authorization rate in each department for the last month
+Generated SQL:
+SELECT
+  T1.DeptName,
+  CAST(SUM(CASE WHEN T1.AuthorizedBy IS NOT NULL THEN 1 ELSE 0 END) AS DECIMAL(10, 2)) * 100.0 / COUNT(T1.PONo) AS POAuthorizationRate
+FROM Purchase.vw_ai_POMain AS T1
+WHERE
+  T1.DocumentDate >= DATEADD(month, -1, DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0))
+  AND T1.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  T1.DeptName
+ORDER BY
+  T1.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 14:55:38] Query: what is the po authorization rate in each department for the last month, if po exist
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 14:55:43
+Query: what is the po authorization rate in each department for the last month, if po exist
+Generated SQL:
+SELECT
+  POMain.DeptName,
+  CAST(COUNT(POMain.AuthorizedBy) AS DECIMAL(10, 2)) * 100 / COUNT(POMain.PONo) AS AuthorizationRate
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, -1, GETDATE())
+  AND POMain.DocumentDate < GETDATE()
+GROUP BY
+  POMain.DeptName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 14:58:50] Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 14:59:01
+Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH ItemsPurchasedInLastMonth AS (\n...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 14:59:07
+Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Generated SQL:
+WITH LastMonthPurchases AS (
+    SELECT 
+        pb.ItemNo,
+        pb.ItemDescription,
+        pb.MakeName,
+        pb.Qty,
+        pb.BasicAmount / NULLIF(pb.Qty, 0) AS CurrentUnitCost,
+        pm.DocumentDate,
+        ROW_NUMBER() OVER (PARTITION BY pb.ItemNo, pb.MakeNo ORDER BY pm.DocumentDate DESC) as rn
+    FROM Finance.vw_ai_PurchaseBillItemDetail pb
+    JOIN Purchase.vw_ai_POMain pm ON pb.PONo = pm.PONo
+    WHERE pm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+      AND pm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+),
+CurrentCosts AS (
+    SELECT * FROM LastMonthPurchases WHERE rn = 1
+),
+LastCosts AS (
+    SELECT 
+        pb.ItemNo,
+        pb.MakeNo,
+        (pb.BasicAmount / NULLIF(pb.Qty, 0)) AS LastUnitCost,
+        ROW_NUMBER() OVER (PARTITION BY pb.ItemNo, pb.MakeNo ORDER BY pm.DocumentDate DESC) as rn
+    FROM Finance.vw_ai_PurchaseBillItemDetail pb
+    JOIN Purchase.vw_ai_POMain pm ON pb.PONo = pm.PONo
+    WHERE pm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+)
+SELECT 
+    c.ItemNo,
+    c.ItemDescription,
+    c.MakeName,
+    c.CurrentUnitCost,
+    l.LastUnitCost,
+    (c.CurrentUnitCost - l.LastUnitCost) AS CostDifference
+FROM CurrentCosts c
+LEFT JOIN LastCosts l ON c.ItemNo = l.ItemNo AND l.rn = 1;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:03:10] Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 15:03:23
+Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH ItemsPurchasedInLastMonth AS (\n...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:03:26
+Query: give the breakup for each item's current unit cost vs last unit cost for the items bought in last month
+Generated SQL:
+WITH LastMonthPurchases AS (
+    SELECT 
+        pb.ItemNo,
+        pb.ItemDescription,
+        pb.MakeName,
+        pb.Qty,
+        pb.BasicAmount / NULLIF(pb.Qty, 0) AS CurrentUnitCost,
+        pm.DocumentDate,
+        ROW_NUMBER() OVER (PARTITION BY pb.ItemNo, pb.MakeNo ORDER BY pm.DocumentDate DESC) as rn
+    FROM Finance.vw_ai_PurchaseBillItemDetail pb
+    JOIN Purchase.vw_ai_POMain pm ON pb.PONo = pm.PONo
+    WHERE pm.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+      AND pm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+),
+CurrentCosts AS (
+    SELECT * FROM LastMonthPurchases WHERE rn = 1
+),
+LastCosts AS (
+    SELECT 
+        pb.ItemNo,
+        pb.MakeNo,
+        (pb.BasicAmount / NULLIF(pb.Qty, 0)) AS LastUnitCost,
+        ROW_NUMBER() OVER (PARTITION BY pb.ItemNo, pb.MakeNo ORDER BY pm.DocumentDate DESC) as rn
+    FROM Finance.vw_ai_PurchaseBillItemDetail pb
+    JOIN Purchase.vw_ai_POMain pm ON pb.PONo = pm.PONo
+    WHERE pm.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+)
+SELECT 
+    c.ItemNo,
+    c.ItemDescription,
+    c.MakeName,
+    c.CurrentUnitCost,
+    l.LastUnitCost,
+    (c.CurrentUnitCost - l.LastUnitCost) AS CostDifference
+FROM CurrentCosts c
+LEFT JOIN LastCosts l ON c.ItemNo = l.ItemNo AND l.rn = 1;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:12:28] Query: which top 5 vendors are becoming expensive over the last two purchasing
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 15:12:42
+Query: which top 5 vendors are becoming expensive over the last two purchasing
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorPurchaseRanks AS (\n    --...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:12:48
+Query: which top 5 vendors are becoming expensive over the last two purchasing
+Generated SQL:
+WITH VendorPurchaseRanks AS (
+    SELECT
+        pbm.VendorNo,
+        pbm.VendorName,
+        pbm.NetAmount,
+        ROW_NUMBER() OVER (PARTITION BY pbm.VendorNo ORDER BY pbm.DocumentDate DESC, pbm.PurchaseBillNo DESC) AS rn
+    FROM
+        Finance.vw_ai_PurchaseBillMain AS pbm
+),
+VendorPriceComparison AS (
+    SELECT
+        vpr.VendorNo,
+        vpr.VendorName,
+        MAX(CASE WHEN vpr.rn = 1 THEN vpr.NetAmount END) AS LastPurchaseAmount,
+        MAX(CASE WHEN vpr.rn = 2 THEN vpr.NetAmount END) AS SecondLastPurchaseAmount
+    FROM
+        VendorPurchaseRanks AS vpr
+    WHERE
+        vpr.rn <= 2
+    GROUP BY
+        vpr.VendorNo,
+        vpr.VendorName
+    HAVING
+        COUNT(vpr.rn) = 2
+)
+SELECT TOP 5
+    VendorName,
+    SecondLastPurchaseAmount,
+    LastPurchaseAmount,
+    (LastPurchaseAmount - SecondLastPurchaseAmount) AS PriceIncrease
+FROM
+    VendorPriceComparison
+WHERE
+    LastPurchaseAmount > SecondLastPurchaseAmount
+ORDER BY
+    PriceIncrease DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:14:07] Query: not like this, i have asked current purchase, previous purchase and previous to that purchase
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 15:14:18
+Query: not like this, i have asked current purchase, previous purchase and previous to that purchase
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorPurchaseRanks AS (\n    SE...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:14:20
+Query: not like this, i have asked current purchase, previous purchase and previous to that purchase
+Generated SQL:
+WITH VendorPurchaseRanks AS (
+    SELECT
+        pbm.VendorNo,
+        pbm.VendorName,
+        pbm.NetAmount,
+        ROW_NUMBER() OVER (PARTITION BY pbm.VendorNo ORDER BY pbm.DocumentDate DESC, pbm.PurchaseBillNo DESC) AS rn
+    FROM
+        Finance.vw_ai_PurchaseBillMain AS pbm
+)
+SELECT 
+    VendorName,
+    MAX(CASE WHEN rn = 1 THEN NetAmount END) AS CurrentPurchase,
+    MAX(CASE WHEN rn = 2 THEN NetAmount END) AS PreviousPurchase,
+    MAX(CASE WHEN rn = 3 THEN NetAmount END) AS PreviousToThatPurchase
+FROM 
+    VendorPurchaseRanks
+WHERE 
+    rn <= 3
+GROUP BY 
+    VendorNo, 
+    VendorName
+HAVING 
+    COUNT(rn) = 3;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:22:34] Query: what is the trend of the Purchase in last 7 months?
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:22:42
+Query: what is the trend of the Purchase in last 7 months?
+Generated SQL:
+SELECT
+  FORMAT(p.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(p.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  FORMAT(p.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:26:10] Query: give me the purchase trend comparison based on current year first half and the previous year first half
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:26:17
+Query: give me the purchase trend comparison based on current year first half and the previous year first half
+Generated SQL:
+SELECT
+  YEAR(p.DocumentDate) AS PurchaseYear,
+  MONTH(p.DocumentDate) AS PurchaseMonth,
+  SUM(p.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  (
+    YEAR(p.DocumentDate) = YEAR(GETDATE())
+    AND MONTH(p.DocumentDate) BETWEEN 1 AND 6
+  )
+  OR (
+    YEAR(p.DocumentDate) = YEAR(GETDATE()) - 1
+    AND MONTH(p.DocumentDate) BETWEEN 1 AND 6
+  )
+GROUP BY
+  YEAR(p.DocumentDate),
+  MONTH(p.DocumentDate)
+ORDER BY
+  PurchaseYear,
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:29:17] Query: which vendors are not reliable for the company over the past 6 month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_GrnMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 15:29:29
+Query: which vendors are not reliable for the company over the past 6 month
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH VendorReliability AS (\n    SELE...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:29:31
+Query: which vendors are not reliable for the company over the past 6 month
+Generated SQL:
+SELECT 
+    pom.VendorName,
+    COUNT(pom.PONo) AS TotalPOs,
+    COUNT(grn.GRNNo) AS TotalGRNs,
+    (CAST(COUNT(pom.PONo) - COUNT(grn.GRNNo) AS FLOAT) / NULLIF(COUNT(pom.PONo), 0)) * 100 AS FailureRatePercentage
+FROM Purchase.vw_ai_POMain pom
+LEFT JOIN Inventory.vw_ai_GrnMain grn ON pom.PONo = grn.GRNNo
+WHERE pom.DocumentDate >= DATEADD(month, -6, GETDATE())
+GROUP BY pom.VendorNo, pom.VendorName
+HAVING COUNT(pom.PONo) > 0
+ORDER BY FailureRatePercentage DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:37:14] Query: what is the amount of latest unauthorized po from them?
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:37:29
+Query: what is the amount of latest unauthorized po from them?
+Generated SQL:
+WITH LatestUnauthorizedPO AS (
+    SELECT
+        PONo,
+        VendorName,
+        DocumentDate,
+        NetAmount,
+        ROW_NUMBER() OVER (PARTITION BY VendorNo ORDER BY DocumentDate DESC, PONo DESC) as rn
+    FROM
+        Purchase.vw_ai_POMain
+    WHERE
+        AuthorizedBy IS NULL
+)
+SELECT
+    VendorName,
+    PONo,
+    DocumentDate,
+    NetAmount
+FROM
+    LatestUnauthorizedPO
+WHERE
+    rn = 1
+ORDER BY
+    VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 15:53:39] Query: give me top 1 vendor name
+Top 4 Initial: Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 15:53:47
+Query: give me top 1 vendor name
+Generated SQL:
+SELECT TOP 1 VendorName
+FROM Purchase.vw_ai_POMain
+GROUP BY VendorName
+ORDER BY COUNT(PONo) DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 16:59:01] Query: Give me the top 5 vendors of the month
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 16:59:09
+Query: Give me the top 5 vendors of the month
+Generated SQL:
+SELECT TOP 5
+  VendorName,
+  SUM(NetAmount) AS TotalNetAmount
+FROM Finance.vw_ai_PurchaseBillMain
+WHERE
+  DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0) AND DocumentDate < DATEADD(
+    month,
+    DATEDIFF(month, 0, GETDATE()) + 1,
+    0
+  )
+GROUP BY
+  VendorNo,
+  VendorName
+ORDER BY
+  TotalNetAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 17:06:38] Query: What is the average distance traveled and vehicle capacity utilization for inbound freight?
+Top 4 Initial: Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-03 17:06:42
+Query: What is the average distance traveled and vehicle capacity utilization for inbound freight?
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'I am sorry, but the provided database sc...'
+------------------------------------------------------------
+[RETRY 2] Timestamp: 2026-07-03 17:06:42
+Query: What is the average distance traveled and vehicle capacity utilization for inbound freight?
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'The provided database schema does not co...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 17:06:44
+Query: What is the average distance traveled and vehicle capacity utilization for inbound freight?
+Generated SQL:
+-- The provided database schema does not contain columns related to "distance traveled" 
+-- or "vehicle capacity utilization". Therefore, it is not possible to generate a 
+-- valid SQL query to calculate these metrics.
+SELECT 'Data not available in schema' AS ErrorMessage;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 17:10:35] Query: give me expense analysis monthly in terms for purchase amount for last 7 months.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 17:10:39
+Query: give me expense analysis monthly in terms for purchase amount for last 7 months.
+Generated SQL:
+SELECT
+  FORMAT(POMain.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  FORMAT(POMain.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 17:10:59] Query: give me expense analysis monthly in terms for purchase amount for last 7 months.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 17:11:03
+Query: give me expense analysis monthly in terms for purchase amount for last 7 months.
+Generated SQL:
+SELECT
+  FORMAT(POMain.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(POMain.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  FORMAT(POMain.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 17:31:39] Query: purchase order, {write query as select * on all the tables recieved from the rag}
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 17:31:43
+Query: purchase order, {write query as select * on all the tables recieved from the rag}
+Generated SQL:
+SELECT * FROM Purchase.vw_ai_POItemDetail;
+SELECT * FROM Finance.vw_ai_PurchaseBillItemDetail;
+SELECT * FROM Purchase.vw_ai_POIndentItemDetail;
+SELECT * FROM Finance.vw_ai_PurchaseBillMain;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:23:54] Query: How many items failed inspection and were marked as rejected or replaceable in the recent GRNs?
+Top 4 Initial: Inventory.vw_ai_GrnMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_GrnMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:24:18
+Query: How many items failed inspection and were marked as rejected or replaceable in the recent GRNs?
+Generated SQL:
+-- This query counts the number of distinct items that were associated with a recent Goods Receipt Note (GRN)
+-- AND for which the overall received quantity on the corresponding Purchase Order (PO) item was greater than the accepted quantity,
+-- implying that some quantity of that item was rejected or failed inspection at some point.
+
+-- IMPORTANT ASSUMPTIONS DUE TO SCHEMA LIMITATIONS:
+-- 1. "Failed inspection and were marked as rejected" is inferred by checking if, for a given PO item,
+--    the total 'ReceivedQty' is greater than the total 'AcceptedQty' in 'Purchase.vw_ai_POItemDetail'.
+--    The schema does not provide a direct 'inspection status' or 'rejection reason' at the GRN item level,
+--    nor does it explicitly define 'replaceable' status.
+-- 2. It is not possible to determine if the rejection *specifically occurred* within a recent GRN.
+--    Instead, this query identifies items that were part of a recent GRN AND whose associated PO item
+--    had an overall quantity discrepancy (Received > Accepted).
+-- 3. "Recent GRNs" is defined as GRNs with a 'DocumentDate' within the last 30 days. This duration can be adjusted as needed.
+
+SELECT
+    COUNT(DISTINCT pbid.ItemNo) AS NumberOfRejectedOrFailedInspectionItems
+FROM
+    Finance.vw_ai_PurchaseBillItemDetail AS pbid
+JOIN
+    Inventory.vw_ai_GrnMain AS gm
+    ON pbid.GRNNo = gm.GRNNo
+JOIN
+    Purchase.vw_ai_POItemDetail AS poid
+    ON pbid.PONo = poid.PONo
+    AND pbid.ItemNo = poid.ItemNo
+    AND pbid.MakeNo = poid.MakeNo -- Joining on PONo, ItemNo, and MakeNo for a more specific link to the PO item detail
+WHERE
+    poid.ReceivedQty > poid.AcceptedQty -- Condition for "failed inspection and were marked as rejected" (overall for the PO item)
+    AND gm.DocumentDate >= DATEADD(day, -30, GETDATE()); -- Condition for "recent GRNs" (adjust '-30' for different recency periods)
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:26:47] Query: Give Last 5 month purchase graph on basis of total purchase amount and total purchase order count
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:26:55
+Query: Give Last 5 month purchase graph on basis of total purchase amount and total purchase order count
+Generated SQL:
+SELECT
+    FORMAT(DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+    SUM(NetAmount) AS TotalPurchaseAmount,
+    COUNT(DISTINCT PurchaseBillNo) AS TotalPurchaseOrderCount
+FROM
+    Finance.vw_ai_PurchaseBillMain
+WHERE
+    DocumentDate >= DATEADD(month, -4, DATETRUNC(month, GETDATE())) -- Filters for the last 5 months, including the current partial month
+GROUP BY
+    FORMAT(DocumentDate, 'yyyy-MM'),
+    YEAR(DocumentDate),
+    MONTH(DocumentDate)
+ORDER BY
+    YEAR(DocumentDate),
+    MONTH(DocumentDate);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:27:48] Query: What is the most expensive item purchased in last 5 months.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:27:52
+Query: What is the most expensive item purchased in last 5 months.
+Generated SQL:
+SELECT TOP 1
+    t1.ItemDescription,
+    t1.NetAmount
+FROM
+    Purchase.vw_ai_POItemDetail AS t1
+INNER JOIN
+    Purchase.vw_ai_POMain AS t2
+    ON t1.PONo = t2.PONo
+WHERE
+    t2.DocumentDate >= DATEADD(month, -4, DATETRUNC(month, GETDATE()))
+ORDER BY
+    t1.NetAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:28:27] Query: i need most expensive purchase order, its vendor and total no of item and po net amount
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:28:34
+Query: i need most expensive purchase order, its vendor and total no of item and po net amount
+Generated SQL:
+SELECT TOP 1
+    M.PONo,
+    M.VendorName,
+    M.NetAmount AS PONetAmount,
+    COUNT(ID.POItemDetailNo) AS TotalNumberOfItems
+FROM
+    Purchase.vw_ai_POMain AS M
+JOIN
+    Purchase.vw_ai_POItemDetail AS ID
+    ON M.PONo = ID.PONo
+GROUP BY
+    M.PONo,
+    M.VendorName,
+    M.NetAmount
+ORDER BY
+    M.NetAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:29:46] Query: what was the item in this po
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:29:51
+Query: what was the item in this po
+Generated SQL:
+SELECT
+    T1.ItemDescription,
+    T1.Quantity,
+    T1.Unit,
+    T1.Rate,
+    T1.BasicAmount
+FROM
+    Purchase.vw_ai_POItemDetail AS T1
+WHERE
+    T1.PONo = (
+        SELECT TOP 1
+            PONo
+        FROM
+            Purchase.vw_ai_POMain
+        ORDER BY
+            NetAmount DESC
+    );
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:30:59] Query: what is the average lead time from indent to Po for last 3 month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[2026-07-03 18:31:31] Query: what is the average lead time from indent to Po for last 3 month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:31:41
+Query: what is the average lead time from indent to Po for last 3 month
+Generated SQL:
+SELECT
+  AVG(DATEDIFF(day, im.CreatedDate, pom.CreatedDate)) AS AverageLeadTimeDays
+FROM Purchase.vw_ai_POMain AS pom
+INNER JOIN Purchase.vw_ai_POIndentItemDetail AS poiid
+  ON pom.PONo = poiid.PONo
+INNER JOIN Inventory.vw_ai_IndentMain AS im
+  ON poiid.IndentNo = im.IndentNo
+WHERE
+  pom.CreatedDate >= DATEADD(month, -3, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:32:20] Query: what is the average lead time from indent to Po for last 6 months
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:32:25
+Query: what is the average lead time from indent to Po for last 6 months
+Generated SQL:
+SELECT
+  AVG(DATEDIFF(day, im.CreatedDate, pom.CreatedDate)) AS AverageLeadTimeDays
+FROM Purchase.vw_ai_POMain AS pom
+INNER JOIN Purchase.vw_ai_POIndentItemDetail AS poiid
+  ON pom.PONo = poiid.PONo
+INNER JOIN Inventory.vw_ai_IndentMain AS im
+  ON poiid.IndentNo = im.IndentNo
+WHERE
+  pom.CreatedDate >= DATEADD(month, -6, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:33:23] Query: what is the average lead time from the indent to placing the purchase order. for the last 6 month window
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:33:33
+Query: what is the average lead time from the indent to placing the purchase order. for the last 6 month window
+Generated SQL:
+-- Note: The schema for 'Inventory.vw_ai_IndentMain' is not provided.
+-- This table is crucial for retrieving the 'CreatedDate' of the indent, which is required to calculate the lead time.
+-- The query below assumes the existence of 'Inventory.vw_ai_IndentMain' with 'IndentNo' and 'CreatedDate' columns.
+
+SELECT
+    AVG(DATEDIFF(day, I.CreatedDate, P.CreatedDate)) AS AverageLeadTimeInDays
+FROM
+    Purchase.vw_ai_POMain AS P
+JOIN
+    Purchase.vw_ai_POIndentItemDetail AS PID ON P.PONo = PID.PONo
+JOIN
+    Inventory.vw_ai_IndentMain AS I ON PID.IndentNo = I.IndentNo -- Assumed table and column
+WHERE
+    P.CreatedDate >= DATEADD(month, -6, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:34:49] Query: what is the average lead time from material request to po
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:34:54
+Query: what is the average lead time from material request to po
+Generated SQL:
+-- Note: The schema for 'Inventory.vw_ai_IndentMain' is not provided.
+-- This table is crucial for retrieving the 'CreatedDate' of the indent (material request), which is required to calculate the lead time.
+-- The query below assumes the existence of 'Inventory.vw_ai_IndentMain' with 'IndentNo' and 'CreatedDate' columns.
+
+SELECT
+    AVG(DATEDIFF(day, I.CreatedDate, P.CreatedDate)) AS AverageLeadTimeInDays
+FROM
+    Purchase.vw_ai_POMain AS P
+JOIN
+    Purchase.vw_ai_POIndentItemDetail AS PID ON P.PONo = PID.PONo
+JOIN
+    Inventory.vw_ai_IndentMain AS I ON PID.IndentNo = I.IndentNo; -- Assumed table and column for Indent (Material Request) creation date
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:38:39] Query: what is the average lead time from indent to Po for last 3 month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:38:45
+Query: what is the average lead time from indent to Po for last 3 month
+Generated SQL:
+SELECT
+    AVG(DATEDIFF(day, I.CreatedDate, P.CreatedDate)) AS AverageLeadTimeInDays
+FROM
+    Purchase.vw_ai_POMain AS P
+JOIN
+    Purchase.vw_ai_POIndentItemDetail AS PID ON P.PONo = PID.PONo
+JOIN
+    Inventory.vw_ai_IndentMain AS I ON PID.IndentNo = I.IndentNo
+WHERE
+    P.CreatedDate >= DATEADD(month, -3, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:39:04] Query: for last 6 month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:39:07
+Query: for last 6 month
+Generated SQL:
+SELECT
+    AVG(DATEDIFF(day, I.CreatedDate, P.CreatedDate)) AS AverageLeadTimeInDays
+FROM
+    Purchase.vw_ai_POMain AS P
+JOIN
+    Purchase.vw_ai_POIndentItemDetail AS PID ON P.PONo = PID.PONo
+JOIN
+    Inventory.vw_ai_IndentMain AS I ON PID.IndentNo = I.IndentNo
+WHERE
+    P.CreatedDate >= DATEADD(month, -6, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:39:41] Query: Give Last 5 month purchase on basis of total purchase amount and total purchase order count
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:39:49
+Query: Give Last 5 month purchase on basis of total purchase amount and total purchase order count
+Generated SQL:
+SELECT
+  FORMAT(POMain.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(POMain.NetAmount) AS TotalPurchaseAmount,
+  COUNT(DISTINCT POMain.PONo) AS TotalPurchaseOrderCount
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 4, 0)
+GROUP BY
+  FORMAT(POMain.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:41:44] Query: Give Last 5 month purchase analytics on basis of total purchase amount and total purchase order count
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:41:49
+Query: Give Last 5 month purchase analytics on basis of total purchase amount and total purchase order count
+Generated SQL:
+SELECT
+  FORMAT(p.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  COUNT(DISTINCT p.PONo) AS TotalPurchaseOrderCount,
+  SUM(p.NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -5, GETDATE())
+GROUP BY
+  FORMAT(p.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:43:38] Query: Give Last 5 month purchase analytics on basis of total purchase amount and total purchase order count
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:43:42
+Query: Give Last 5 month purchase analytics on basis of total purchase amount and total purchase order count
+Generated SQL:
+SELECT
+  FORMAT(p.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(p.NetAmount) AS TotalPurchaseAmount,
+  COUNT(DISTINCT p.PONo) AS TotalPurchaseOrderCount
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -5, GETDATE())
+GROUP BY
+  FORMAT(p.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-03 18:44:34] Query: give me the purchase trend comparison based on current year first half and the previous year first half
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-03 18:44:41
+Query: give me the purchase trend comparison based on current year first half and the previous year first half
+Generated SQL:
+WITH PurchaseTrends AS (
+    -- Calculate total NetAmount for the first half of the current year
+    SELECT
+        SUM(CASE
+                WHEN DocumentDate >= DATEFROMPARTS(YEAR(GETDATE()), 1, 1)
+                 AND DocumentDate < DATEFROMPARTS(YEAR(GETDATE()), 7, 1)
+                THEN NetAmount
+                ELSE 0
+            END) AS CurrentYearFirstHalfAmount,
+        -- Calculate total NetAmount for the first half of the previous year
+        SUM(CASE
+                WHEN DocumentDate >= DATEFROMPARTS(YEAR(GETDATE()) - 1, 1, 1)
+                 AND DocumentDate < DATEFROMPARTS(YEAR(GETDATE()) - 1, 7, 1)
+                THEN NetAmount
+                ELSE 0
+            END) AS PreviousYearFirstHalfAmount
+    FROM
+        Purchase.vw_ai_POMain
+)
+SELECT
+    CurrentYearFirstHalfAmount,
+    PreviousYearFirstHalfAmount,
+    (CurrentYearFirstHalfAmount - PreviousYearFirstHalfAmount) AS Difference,
+    CASE
+        WHEN PreviousYearFirstHalfAmount > 0 THEN
+            ((CurrentYearFirstHalfAmount - PreviousYearFirstHalfAmount) / PreviousYearFirstHalfAmount) * 100
+        ELSE NULL -- Handle division by zero if previous year's amount is 0
+    END AS PercentageChange
+FROM
+    PurchaseTrends;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:19:39] Query: Total purchase order amount by vendor. for last one month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:19:48
+Query: Total purchase order amount by vendor. for last one month
+Generated SQL:
+SELECT
+  VendorName,
+  SUM(NetAmount) AS TotalPurchaseOrderAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:20:36] Query: Number of purchase orders created each month. for last 7 months
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[2026-07-06 12:21:35] Query: Number of purchase orders created each month. for last 7 months
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:21:41
+Query: Number of purchase orders created each month. for last 7 months
+Generated SQL:
+SELECT
+    FORMAT(CreatedDate, 'yyyy-MM') AS PurchaseMonth,
+    COUNT(PONo) AS NumberOfPurchaseOrders
+FROM
+    Purchase.vw_ai_POMain
+WHERE
+    CreatedDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 6, 0)
+GROUP BY
+    FORMAT(CreatedDate, 'yyyy-MM')
+ORDER BY
+    PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:22:01] Query: Number of purchase orders created each month. for last 7 months
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:22:05
+Query: Number of purchase orders created each month. for last 7 months
+Generated SQL:
+SELECT
+    FORMAT(CreatedDate, 'yyyy-MM') AS PurchaseMonth,
+    COUNT(PONo) AS NumberOfPurchaseOrders
+FROM
+    Purchase.vw_ai_POMain
+WHERE
+    CreatedDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 6, 0)
+GROUP BY
+    FORMAT(CreatedDate, 'yyyy-MM')
+ORDER BY
+    PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:22:34] Query: Purchase value by department for last 2 months
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:22:38
+Query: Purchase value by department for last 2 months
+Generated SQL:
+SELECT
+  pom.DeptName,
+  SUM(pom.NetAmount) AS TotalPurchaseValue
+FROM Purchase.vw_ai_POMain AS pom
+WHERE
+  pom.DocumentDate >= DATEADD(month, -2, GETDATE())
+GROUP BY
+  pom.DeptName
+ORDER BY
+  TotalPurchaseValue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:38:36] Query: Purchase orders by payment mode. for last one month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:38:40
+Query: Purchase orders by payment mode. for last one month
+Generated SQL:
+SELECT
+  PaymentMode,
+  COUNT(PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  PaymentMode;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:39:21] Query: Purchase value by purchase category. for last 7 months
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:39:25
+Query: Purchase value by purchase category. for last 7 months
+Generated SQL:
+SELECT
+  p.POPurchaseCategory,
+  FORMAT(p.DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(p.NetAmount) AS TotalPurchaseValue
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  p.POPurchaseCategory,
+  FORMAT(p.DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth,
+  p.POPurchaseCategory;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:40:29] Query: Number of GRNs received each month. for last 7 months
+Top 4 Initial: Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Inventory.vw_ai_GrnMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:40:33
+Query: Number of GRNs received each month. for last 7 months
+Generated SQL:
+SELECT
+  FORMAT(t1.DocumentDate, 'yyyy-MM') AS GRNMonth,
+  COUNT(t1.GRNNo) AS NumberOfGRNs
+FROM Inventory.vw_ai_GrnMain AS t1
+WHERE
+  t1.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  FORMAT(t1.DocumentDate, 'yyyy-MM')
+ORDER BY
+  GRNMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:40:58] Query: Top 10 most purchased items. in last one year
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:41:04
+Query: Top 10 most purchased items. in last one year
+Generated SQL:
+SELECT TOP 10
+    poid.ItemNo,
+    poid.ItemDescription,
+    SUM(poid.Quantity) AS TotalQuantityPurchased
+FROM
+    Purchase.vw_ai_POItemDetail AS poid
+JOIN
+    Purchase.vw_ai_POMain AS pom
+    ON poid.PONo = pom.PONo
+WHERE
+    pom.DocumentDate >= DATEADD(year, -1, GETDATE())
+GROUP BY
+    poid.ItemNo,
+    poid.ItemDescription
+ORDER BY
+    TotalQuantityPurchased DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:41:56] Query: Average PO value per vendor. in last one year
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:42:00
+Query: Average PO value per vendor. in last one year
+Generated SQL:
+SELECT
+  POMain.VendorNo,
+  POMain.VendorName,
+  AVG(POMain.NetAmount) AS AveragePOValue
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(year, -1, GETDATE())
+GROUP BY
+  POMain.VendorNo,
+  POMain.VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:43:46] Query: Compare purchase amount and billed amount. for last 7 months
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:43:58
+Query: Compare purchase amount and billed amount. for last 7 months
+Generated SQL:
+DECLARE @StartDate smalldatetime;
+
+-- Calculate the start date for the last 7 months.
+-- This will be the first day of the month, 6 months prior to the current month.
+-- For example, if today is Oct 26, 2023, @StartDate will be Apr 1, 2023,
+-- covering April, May, June, July, August, September, and October (7 months).
+SET @StartDate = DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 6, 0);
+
+WITH MonthlyPurchaseOrders AS (
+    SELECT
+        YEAR(DocumentDate) AS Year,
+        MONTH(DocumentDate) AS Month,
+        SUM(NetAmount) AS TotalPurchaseAmount
+    FROM
+        Purchase.vw_ai_POMain
+    WHERE
+        DocumentDate >= @StartDate
+    GROUP BY
+        YEAR(DocumentDate),
+        MONTH(DocumentDate)
+),
+MonthlyPurchaseBills AS (
+    SELECT
+        YEAR(DocumentDate) AS Year,
+        MONTH(DocumentDate) AS Month,
+        SUM(VendorBillAmount) AS TotalBilledAmount
+    FROM
+        Finance.vw_ai_PurchaseBillMain
+    WHERE
+        DocumentDate >= @StartDate
+    GROUP BY
+        YEAR(DocumentDate),
+        MONTH(DocumentDate)
+)
+SELECT
+    COALESCE(PO.Year, PB.Year) AS [Year],
+    COALESCE(PO.Month, PB.Month) AS [Month],
+    DATENAME(month, DATEFROMPARTS(COALESCE(PO.Year, PB.Year), COALESCE(PO.Month, PB.Month), 1)) AS MonthName,
+    ISNULL(PO.TotalPurchaseAmount, 0) AS TotalPurchaseAmount,
+    ISNULL(PB.TotalBilledAmount, 0) AS TotalBilledAmount,
+    ISNULL(PO.TotalPurchaseAmount, 0) - ISNULL(PB.TotalBilledAmount, 0) AS Difference
+FROM
+    MonthlyPurchaseOrders PO
+FULL OUTER JOIN
+    MonthlyPurchaseBills PB
+    ON PO.Year = PB.Year AND PO.Month = PB.Month
+ORDER BY
+    [Year],
+    [Month];
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:45:02] Query: Compare ordered quantity vs received quantity. for last 7 months
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:45:07
+Query: Compare ordered quantity vs received quantity. for last 7 months
+Generated SQL:
+SELECT
+    FORMAT(pm.DocumentDate, 'yyyy-MM') AS OrderMonth,
+    SUM(pid.Quantity) AS TotalOrderedQuantity,
+    SUM(pid.ReceivedQty) AS TotalReceivedQuantity
+FROM
+    Purchase.vw_ai_POMain AS pm
+JOIN
+    Purchase.vw_ai_POItemDetail AS pid
+    ON pm.PONo = pid.PONo
+WHERE
+    pm.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+    FORMAT(pm.DocumentDate, 'yyyy-MM')
+ORDER BY
+    OrderMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:46:07] Query: Department contribution to total purchase value. in last 7 months
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:46:10
+Query: Department contribution to total purchase value. in last 7 months
+Generated SQL:
+SELECT
+  POMain.DeptName,
+  SUM(POMain.NetAmount) AS TotalPurchaseValue
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, -7, GETDATE())
+GROUP BY
+  POMain.DeptName
+ORDER BY
+  TotalPurchaseValue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:47:10] Query: show me top vendor in last one year.
+Top 4 Initial: Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:47:14
+Query: show me top vendor in last one year.
+Generated SQL:
+SELECT TOP 1
+  VendorName,
+  SUM(NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(year, -1, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:47:41] Query: Show purchase trend for Vendor 'LLOYDS METALS AND ENERGY LIMITED'.
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:47:46
+Query: Show purchase trend for Vendor 'LLOYDS METALS AND ENERGY LIMITED'.
+Generated SQL:
+SELECT
+  FORMAT(DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(NetAmount) AS MonthlyPurchaseAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  VendorName = 'LLOYDS METALS AND ENERGY LIMITED'
+GROUP BY
+  FORMAT(DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:49:12] Query: Show purchase trend for Vendor 'LLOYDS METALS AND ENERGY LIMITED'. for last year
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:49:17
+Query: Show purchase trend for Vendor 'LLOYDS METALS AND ENERGY LIMITED'. for last year
+Generated SQL:
+SELECT
+  FORMAT(DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(NetAmount) AS MonthlyPurchaseAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  VendorName = 'LLOYDS METALS AND ENERGY LIMITED' AND DocumentDate >= DATEADD(year, -1, GETDATE())
+GROUP BY
+  FORMAT(DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:50:27] Query: Vendors whose purchase value is above the average purchase value. in last one year
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:50:32
+Query: Vendors whose purchase value is above the average purchase value. in last one year
+Generated SQL:
+WITH VendorPurchaseSummary AS (
+    SELECT
+        VendorNo,
+        VendorName,
+        SUM(NetAmount) AS TotalPurchaseValue
+    FROM
+        Purchase.vw_ai_POMain
+    WHERE
+        DocumentDate >= DATEADD(year, -1, GETDATE())
+    GROUP BY
+        VendorNo,
+        VendorName
+)
+SELECT
+    vps.VendorNo,
+    vps.VendorName,
+    vps.TotalPurchaseValue
+FROM
+    VendorPurchaseSummary AS vps
+WHERE
+    vps.TotalPurchaseValue > (SELECT AVG(TotalPurchaseValue) FROM VendorPurchaseSummary)
+ORDER BY
+    vps.TotalPurchaseValue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:52:01] Query: Vendors whose acceptance rate is below the company average. in last 6 months
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:52:16
+Query: Vendors whose acceptance rate is below the company average. in last 6 months
+Generated SQL:
+WITH POData AS (
+    -- Step 1: Retrieve relevant Purchase Order item details for the last 6 months
+    -- This CTE filters POs by date and ensures that items have a positive quantity
+    -- to avoid division by zero errors in subsequent calculations.
+    SELECT
+        pom.VendorNo,
+        pom.VendorName,
+        poi.AcceptedQty,
+        poi.Quantity
+    FROM
+        Purchase.vw_ai_POMain AS pom
+    JOIN
+        Purchase.vw_ai_POItemDetail AS poi
+        ON pom.PONo = poi.PONo
+    WHERE
+        pom.DocumentDate >= DATEADD(month, -6, GETDATE()) -- Filter for the last 6 months
+        AND poi.Quantity > 0 -- Exclude items with zero quantity
+),
+VendorAcceptance AS (
+    -- Step 2: Calculate the total accepted quantity, total ordered quantity,
+    -- and the acceptance rate for each vendor within the filtered period.
+    SELECT
+        VendorNo,
+        VendorName,
+        SUM(AcceptedQty) AS TotalAcceptedQty,
+        SUM(Quantity) AS TotalQuantity,
+        -- Calculate Vendor Acceptance Rate, handling potential division by zero
+        CAST(SUM(AcceptedQty) AS DECIMAL(18, 4)) / NULLIF(SUM(Quantity), 0) AS VendorAcceptanceRate
+    FROM
+        POData
+    GROUP BY
+        VendorNo,
+        VendorName
+),
+CompanyAverage AS (
+    -- Step 3: Calculate the overall company-wide acceptance rate for the same period.
+    SELECT
+        -- Calculate Company Acceptance Rate, handling potential division by zero
+        CAST(SUM(AcceptedQty) AS DECIMAL(18, 4)) / NULLIF(SUM(Quantity), 0) AS CompanyAcceptanceRate
+    FROM
+        POData
+)
+-- Step 4: Select vendors whose calculated acceptance rate is below the company average.
+SELECT
+    va.VendorNo,
+    va.VendorName
+    -- Optionally, include the rates for verification:
+    -- , va.VendorAcceptanceRate
+    -- , ca.CompanyAcceptanceRate
+FROM
+    VendorAcceptance AS va
+CROSS JOIN
+    CompanyAverage AS ca -- CROSS JOIN to get the single company average value for comparison
+WHERE
+    va.VendorAcceptanceRate < ca.CompanyAcceptanceRate
+    AND va.TotalQuantity > 0 -- Ensure the vendor had actual quantities to be accepted/rejected
+ORDER BY
+    va.VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 12:54:14] Query: Procurement dashboard
+Top 4 Initial: Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-06 12:54:37
+Query: Procurement dashboard
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\n-- Procurement Dashboard: Key Perfor...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 12:54:40
+Query: Procurement dashboard
+Generated SQL:
+-- Procurement Dashboard: Key Performance Indicators (KPIs) - Year-to-Date Summary
+WITH YTD_PO_Summary AS (
+    -- Summarizes Purchase Order related metrics for the current year
+    SELECT
+        SUM(pom.NetAmount) AS TotalPOValue,
+        COUNT(DISTINCT pom.PONo) AS NumberOfPOs,
+        CASE
+            WHEN COUNT(DISTINCT pom.PONo) > 0 THEN SUM(pom.NetAmount) / COUNT(DISTINCT pom.PONo)
+            ELSE 0
+        END AS AveragePOValue,
+        COUNT(DISTINCT pom.VendorNo) AS NumberOfActiveVendors,
+        -- Count of distinct POs that have at least one item not fully accepted
+        COUNT(DISTINCT CASE WHEN poi.AcceptedQty < poi.Quantity THEN pom.PONo END) AS PendingPOs
+    FROM
+        Purchase.vw_ai_POMain AS pom
+    LEFT JOIN
+        Purchase.vw_ai_POItemDetail AS poi ON pom.PONo = poi.PONo
+    WHERE
+        pom.DocumentDate >= DATEFROMPARTS(YEAR(GETDATE()), 1, 1)
+)
+SELECT 
+    TotalPOValue,
+    NumberOfPOs,
+    AveragePOValue,
+    NumberOfActiveVendors,
+    PendingPOs
+FROM 
+    YTD_PO_Summary;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:01:19] Query: Give Last 5 month purchase graph on basis of total purchase amount and total purchase order count
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[2026-07-06 13:01:27] Query: Give Last 5 month purchase graph on basis of total purchase amount and total purchase order count
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:01:35
+Query: Give Last 5 month purchase graph on basis of total purchase amount and total purchase order count
+Generated SQL:
+SELECT
+    FORMAT(DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+    SUM(NetAmount) AS TotalPurchaseAmount,
+    COUNT(DISTINCT PurchaseBillNo) AS TotalPurchaseOrderCount
+FROM
+    Finance.vw_ai_PurchaseBillMain
+WHERE
+    DocumentDate >= DATEADD(month, -4, DATETRUNC(month, GETDATE())) -- Filters for the last 5 months, including the current partial month
+GROUP BY
+    FORMAT(DocumentDate, 'yyyy-MM'),
+    YEAR(DocumentDate),
+    MONTH(DocumentDate)
+ORDER BY
+    YEAR(DocumentDate),
+    MONTH(DocumentDate);
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:04:32] Query: give top 5 vendors based on po for last 3 months
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:04:36
+Query: give top 5 vendors based on po for last 3 months
+Generated SQL:
+SELECT TOP 5
+  p.VendorName,
+  SUM(p.NetAmount) AS TotalPOAmount
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -3, GETDATE())
+GROUP BY
+  p.VendorNo,
+  p.VendorName
+ORDER BY
+  TotalPOAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:11:37] Query: give me 5 vendors of last 1 month
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:11:42
+Query: give me 5 vendors of last 1 month
+Generated SQL:
+SELECT TOP 5
+  VendorName,
+  COUNT(PurchaseBillNo) AS NumberOfBills
+FROM Finance.vw_ai_PurchaseBillMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  NumberOfBills DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:11:49] Query: give me 5 vendors of last 1 month
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:11:53
+Query: give me 5 vendors of last 1 month
+Generated SQL:
+SELECT TOP 5
+  VendorName,
+  COUNT(PurchaseBillNo) AS NumberOfBills
+FROM Finance.vw_ai_PurchaseBillMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  NumberOfBills DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:28:48] Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore). 
+Top 4 Initial: Purchase.vw_ai_POMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:28:53
+Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore). 
+Generated SQL:
+SELECT TOP 1
+  p.VendorName,
+  COUNT(p.PONo) AS TotalPOCount,
+  SUM(p.NetAmount) / 10000000 AS TotalPOAmountInCrore
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -10, GETDATE())
+GROUP BY
+  p.VendorNo,
+  p.VendorName
+ORDER BY
+  TotalPOCount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:29:19] Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore).
+Top 4 Initial: Purchase.vw_ai_POMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:29:23
+Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore).
+Generated SQL:
+SELECT TOP 1
+  p.VendorName,
+  COUNT(p.PONo) AS TotalPOCount,
+  SUM(p.NetAmount) / 10000000 AS TotalPOAmountInCrore
+FROM Purchase.vw_ai_POMain AS p
+WHERE
+  p.DocumentDate >= DATEADD(month, -10, GETDATE())
+GROUP BY
+  p.VendorNo,
+  p.VendorName
+ORDER BY
+  TotalPOCount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:30:43] Query: Tell me top 5 item which this vendor is delivering. show those 5 items which purchase most of the time with same vendor.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:30:51
+Query: Tell me top 5 item which this vendor is delivering. show those 5 items which purchase most of the time with same vendor.
+Generated SQL:
+SELECT TOP 5
+  poid.ItemDescription,
+  COUNT(poid.ItemNo) AS PurchaseCount
+FROM Purchase.vw_ai_POMain AS pomain
+JOIN Purchase.vw_ai_POItemDetail AS poid
+  ON pomain.PONo = poid.PONo
+WHERE
+  pomain.VendorNo = (
+    -- Subquery to find the VendorNo of the vendor who received the maximum number of POs in the last 10 months
+    SELECT TOP 1
+      p.VendorNo
+    FROM Purchase.vw_ai_POMain AS p
+    WHERE
+      p.DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY
+      p.VendorNo,
+      p.VendorName
+    ORDER BY
+      COUNT(p.PONo) DESC
+  )
+  AND pomain.DocumentDate >= DATEADD(month, -10, GETDATE()) -- Apply the same date filter for item purchases
+GROUP BY
+  poid.ItemNo,
+  poid.ItemDescription
+ORDER BY
+  PurchaseCount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:32:13] Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore or in lakh or in thousand). Tell me unique item count too. and avg item count per po. tell the frequency of purchase order in days.
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-06 13:32:35
+Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore or in lakh or in thousand). Tell me unique item count too. and avg item count per po. tell the frequency of purchase order in days.
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH TopVendor AS (\n  -- Find the Ve...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:32:38
+Query: Which Vendor received maximum number of purchase order in last 10 months. TEll me the total po count and total po amount (in crore or in lakh or in thousand). Tell me unique item count too. and avg item count per po. tell the frequency of purchase order in days.
+Generated SQL:
+WITH TopVendor AS (
+  SELECT TOP 1
+    p.VendorNo
+  FROM Purchase.vw_ai_POMain AS p
+  WHERE p.DocumentDate >= DATEADD(month, -10, GETDATE())
+  GROUP BY p.VendorNo
+  ORDER BY COUNT(p.PONo) DESC
+),
+VendorStats AS (
+  SELECT 
+    pom.VendorName,
+    COUNT(pom.PONo) AS TotalPOCount,
+    SUM(pom.NetAmount) AS TotalPOAmount,
+    COUNT(DISTINCT poid.ItemNo) AS UniqueItemCount,
+    CAST(COUNT(poid.POItemDetailNo) AS FLOAT) / COUNT(DISTINCT pom.PONo) AS AvgItemsPerPO,
+    DATEDIFF(DAY, MIN(pom.DocumentDate), MAX(pom.DocumentDate)) / NULLIF(COUNT(pom.PONo) - 1, 0) AS AvgDaysBetweenPOs
+  FROM Purchase.vw_ai_POMain AS pom
+  JOIN Purchase.vw_ai_POItemDetail AS poid ON pom.PONo = poid.PONo
+  WHERE pom.VendorNo = (SELECT VendorNo FROM TopVendor)
+    AND pom.DocumentDate >= DATEADD(month, -10, GETDATE())
+  GROUP BY pom.VendorName
+)
+SELECT 
+  VendorName,
+  TotalPOCount,
+  TotalPOAmount / 10000000.0 AS TotalPOAmountInCrore,
+  TotalPOAmount / 100000.0 AS TotalPOAmountInLakh,
+  TotalPOAmount / 1000.0 AS TotalPOAmountInThousand,
+  UniqueItemCount,
+  AvgItemsPerPO,
+  AvgDaysBetweenPOs AS FrequencyInDays
+FROM VendorStats;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:33:58] Query: explain why frequency is zero
+Top 4 Initial: Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-06 13:34:04
+Query: explain why frequency is zero
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'The `FrequencyInDays` (calculated as `Av...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:34:07
+Query: explain why frequency is zero
+Generated SQL:
+/*
+The frequency is zero because the calculation DATEDIFF(DAY, MIN(pom.DocumentDate), MAX(pom.DocumentDate)) / NULLIF(COUNT(pom.PONo) - 1, 0) 
+results in 0 when all purchase orders for that vendor were issued on the same calendar day. 
+In this scenario, the difference between the first and last document date is 0, and 0 divided by any positive integer count of intervals is 0.
+*/
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-06 13:34:27] Query: explain why frequency is zero for this vendor
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-06 13:34:35
+Query: explain why frequency is zero for this vendor
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'The `FrequencyInDays` (calculated as `Av...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-06 13:34:38
+Query: explain why frequency is zero for this vendor
+Generated SQL:
+/*
+The frequency is zero for this vendor because of the following reasons:
+
+1. All Purchase Orders were placed on the same day:
+   The calculation DATEDIFF(DAY, MIN(pom.DocumentDate), MAX(pom.DocumentDate)) returns 0 if the earliest 
+   and latest DocumentDate for that vendor are identical.
+
+2. Only one Purchase Order exists:
+   If there is only one PO, the denominator (COUNT - 1) becomes 0. The NULLIF function handles this 
+   by returning NULL, which may be interpreted or displayed as 0 depending on the environment.
+*/
+
+SELECT 
+  VendorName,
+  TotalPOCount,
+  TotalPOAmount / 10000000.0 AS TotalPOAmountInCrore,
+  TotalPOAmount / 100000.0 AS TotalPOAmountInLakh,
+  TotalPOAmount / 1000.0 AS TotalPOAmountInThousand,
+  UniqueItemCount,
+  AvgItemsPerPO,
+  AvgDaysBetweenPOs AS FrequencyInDays
+FROM (
+  SELECT 
+    pom.VendorName,
+    COUNT(DISTINCT pom.PONo) AS TotalPOCount,
+    SUM(pom.NetAmount) AS TotalPOAmount,
+    COUNT(DISTINCT poid.ItemNo) AS UniqueItemCount,
+    CAST(COUNT(poid.POItemDetailNo) AS FLOAT) / NULLIF(COUNT(DISTINCT pom.PONo), 0) AS AvgItemsPerPO,
+    DATEDIFF(DAY, MIN(pom.DocumentDate), MAX(pom.DocumentDate)) / NULLIF(COUNT(DISTINCT pom.PONo) - 1, 0) AS AvgDaysBetweenPOs
+  FROM Purchase.vw_ai_POMain AS pom
+  JOIN Purchase.vw_ai_POItemDetail AS poid ON pom.PONo = poid.PONo
+  WHERE pom.VendorNo = (
+    SELECT TOP 1 VendorNo 
+    FROM Purchase.vw_ai_POMain 
+    WHERE DocumentDate >= DATEADD(month, -10, GETDATE())
+    GROUP BY VendorNo 
+    ORDER BY COUNT(PONo) DESC
+  )
+  AND pom.DocumentDate >= DATEADD(month, -10, GETDATE())
+  GROUP BY pom.VendorName
+) AS VendorStats;
+Status: SUCCESS
+------------------------------------------------------------

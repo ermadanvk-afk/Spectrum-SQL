@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageSquare, Briefcase, Settings, Plus, PanelLeft, PanelLeftClose, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2 } from 'lucide-react'
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
 
@@ -8,6 +8,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false) // default closed to match requested view
   const [isAnalysisEnabled, setIsAnalysisEnabled] = useState(false)
+  const [isVisualAnalysisEnabled, setIsVisualAnalysisEnabled] = useState(false)
 
   // Chat History State
   const [allChats, setAllChats] = useState([])
@@ -143,6 +144,7 @@ function App() {
             type: 'success',
             query: query,
             analysisEnabled: isAnalysisEnabled,
+            visualAnalysisEnabled: isVisualAnalysisEnabled,
             ...data
           })
         }
@@ -193,6 +195,16 @@ function App() {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
         newMsgs[index] = { ...newMsgs[index], analysis: analysisData };
+      }
+      return newMsgs;
+    });
+  }
+
+  const handleVisualAnalysisComplete = (index, specData) => {
+    setMessages(prev => {
+      const newMsgs = [...prev];
+      if (newMsgs[index]) {
+        newMsgs[index] = { ...newMsgs[index], visual_spec: specData };
       }
       return newMsgs;
     });
@@ -256,6 +268,18 @@ function App() {
               type="checkbox" 
               checked={isAnalysisEnabled} 
               onChange={(e) => setIsAnalysisEnabled(e.target.checked)} 
+            />
+            <span className="slider round"></span>
+          </label>
+        </div>
+
+        <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Visual Analysis</span>
+          <label className="switch">
+            <input 
+              type="checkbox" 
+              checked={isVisualAnalysisEnabled} 
+              onChange={(e) => setIsVisualAnalysisEnabled(e.target.checked)} 
             />
             <span className="slider round"></span>
           </label>
@@ -325,6 +349,7 @@ function App() {
                 key={idx} 
                 message={msg} 
                 onAnalysisComplete={(data) => handleAnalysisComplete(idx, data)}
+                onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec)}
               />
             ))
           )}

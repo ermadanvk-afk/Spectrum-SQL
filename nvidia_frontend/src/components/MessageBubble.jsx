@@ -3,6 +3,7 @@ import { CheckCircle2, Loader2, Database } from 'lucide-react';
 import SQLViewer from './SQLViewer';
 import DataTable from './DataTable';
 import AnalysisPanel from './AnalysisPanel';
+import VisualAnalysisPanel from './VisualAnalysisPanel';
 
 const LOADING_STEPS = [
   "Vectorising prompt & retrieving schema context via RAG...",
@@ -32,9 +33,9 @@ function LoadingSteps() {
         if (isFuture) return null;
 
         return (
-          <div key={idx} style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <div key={idx} style={{
+            display: 'flex',
+            alignItems: 'center',
             gap: '12px',
             color: isPast ? '#34d399' : 'var(--text-main)',
             opacity: isPast ? 0.7 : 1,
@@ -54,9 +55,9 @@ function LoadingSteps() {
   );
 }
 
-export default function MessageBubble({ message, onAnalysisComplete }) {
+export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete }) {
   const isUser = message.role === 'user';
-  
+
   if (message.type === 'loading') {
     return (
       <div className="message assistant">
@@ -80,10 +81,10 @@ export default function MessageBubble({ message, onAnalysisComplete }) {
   return (
     <div className={`message ${isUser ? 'user' : 'assistant'}`}>
       <div className={isUser ? "message-bubble" : "message-bubble glass-panel"} style={!isUser ? { padding: '24px' } : {}}>
-        
+
         {/* User message text */}
         {isUser && <div>{message.content}</div>}
-        
+
         {/* Assistant success response */}
         {!isUser && message.type === 'success' && (
           <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
@@ -103,15 +104,25 @@ export default function MessageBubble({ message, onAnalysisComplete }) {
                   {message.explanation}
                 </div>
               )}
-              
+
               {message.sql && (
                 <SQLViewer sql={message.sql} originalSql={message.original_sql} />
               )}
-              
+
               {message.data && (
                 <DataTable data={message.data} />
               )}
-              
+
+              {message.visualAnalysisEnabled && message.data && message.data.length > 0 && (
+                <VisualAnalysisPanel
+                  query={message.query}
+                  data={message.data}
+                  isHistorical={message.isHistorical}
+                  initialSpec={message.visual_spec}
+                  onComplete={onVisualAnalysisComplete}
+                />
+              )}
+
               {message.cost && (
                 <div className="cost-metrics">
                   <div className="metric-card">
@@ -132,8 +143,8 @@ export default function MessageBubble({ message, onAnalysisComplete }) {
 
             {message.analysisEnabled && message.data && message.data.length > 0 && (
               <div style={{ flex: 1, minWidth: '350px' }}>
-                <AnalysisPanel 
-                  query={message.query} 
+                <AnalysisPanel
+                  query={message.query}
                   data={message.data}
                   initialAnalysis={message.analysis}
                   onComplete={onAnalysisComplete}
