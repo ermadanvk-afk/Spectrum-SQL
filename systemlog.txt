@@ -3398,3 +3398,1540 @@ FROM (
 ) AS VendorStats;
 Status: SUCCESS
 ------------------------------------------------------------
+[2026-07-07 12:23:50] Query: give the vendor with the most purchase order in last 1 month
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 12:23:56
+Query: give the vendor with the most purchase order in last 1 month
+Error: Found 1 issues while parsing string.
+Line 12, Position 1: Found unparsable section: 'LIMIT 1;'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 12:24:00
+Query: give the vendor with the most purchase order in last 1 month
+Generated SQL:
+SELECT TOP 1
+  VendorName,
+  COUNT(PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  VendorNo,
+  VendorName
+ORDER BY
+  NumberOfPurchaseOrders DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 12:58:44] Query: give me the vendor with most po in last 2 months
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 12:58:49
+Query: give me the vendor with most po in last 2 months
+Error: Found 1 issues while parsing string.
+Line 12, Position 1: Found unparsable section: 'LIMIT 1;'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 12:58:53
+Query: give me the vendor with most po in last 2 months
+Generated SQL:
+SELECT TOP 1
+  VendorName,
+  COUNT(PONo) AS NumberOfPOs
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -2, GETDATE())
+GROUP BY
+  VendorNo,
+  VendorName
+ORDER BY
+  NumberOfPOs DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:00:37] Query: give me the department wise purchase analytics for the last month
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:00:42
+Query: give me the department wise purchase analytics for the last month
+Generated SQL:
+SELECT
+  DeptName,
+  COUNT(PONo) AS NumberOfPOs,
+  SUM(NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -1, GETDATE())
+GROUP BY
+  DeptNo,
+  DeptName
+ORDER BY
+  TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:04:48] Query: what is the category wise distribution in purchase orders for the last month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:04:52
+Query: what is the category wise distribution in purchase orders for the last month
+Generated SQL:
+SELECT
+  POMain.POPurchaseCategory,
+  COUNT(POMain.PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND POMain.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  POMain.POPurchaseCategory
+ORDER BY
+  NumberOfPurchaseOrders DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:05:22] Query: what is the category wise distribution in purchase orders for the last 10 months
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:05:31
+Query: what is the category wise distribution in purchase orders for the last 10 months
+Generated SQL:
+SELECT
+  POMain.POPurchaseCategory,
+  COUNT(POMain.PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 10, 0)
+  AND POMain.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  POMain.POPurchaseCategory
+ORDER BY
+  NumberOfPurchaseOrders DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:10:47] Query: what is the category wise distribution in purchase orders for the last 10 months
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:10:55
+Query: what is the category wise distribution in purchase orders for the last 10 months
+Generated SQL:
+SELECT
+  POMain.POPurchaseCategory,
+  COUNT(POMain.PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 10, 0)
+  AND POMain.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  POMain.POPurchaseCategory
+ORDER BY
+  NumberOfPurchaseOrders DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:11:54] Query: what is the category wise distribution in purchase orders for the last month
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:11:59
+Query: what is the category wise distribution in purchase orders for the last month
+Generated SQL:
+SELECT
+  POMain.POPurchaseCategory,
+  COUNT(POMain.PONo) AS NumberOfPurchaseOrders
+FROM Purchase.vw_ai_POMain AS POMain
+WHERE
+  POMain.DocumentDate >= DATEADD(month, DATEDIFF(month, 0, GETDATE()) - 1, 0)
+  AND POMain.DocumentDate < DATEADD(month, DATEDIFF(month, 0, GETDATE()), 0)
+GROUP BY
+  POMain.POPurchaseCategory
+ORDER BY
+  NumberOfPurchaseOrders DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:31:22] Query: which vendor has made the largest revenue in last 2 month?
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 13:31:27
+Query: which vendor has made the largest revenue in last 2 month?
+Error: Found 1 issues while parsing string.
+Line 11, Position 1: Found unparsable section: 'LIMIT 1;'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:31:31
+Query: which vendor has made the largest revenue in last 2 month?
+Generated SQL:
+SELECT TOP 1
+  VendorName,
+  SUM(NetAmount) AS TotalRevenue
+FROM Finance.vw_ai_PurchaseBillMain
+WHERE
+  DocumentDate >= DATEADD(month, -2, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  TotalRevenue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:33:58] Query: which vendor has made the largest revenue in last 2 month?
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:34:02
+Query: which vendor has made the largest revenue in last 2 month?
+Generated SQL:
+SELECT TOP 1
+  VendorName,
+  SUM(NetAmount) AS TotalRevenue
+FROM Finance.vw_ai_PurchaseBillMain
+WHERE
+  DocumentDate >= DATEADD(month, -2, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  TotalRevenue DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:35:29] Query: Who are our best-performing vendors? in last 8 months
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:35:33
+Query: Who are our best-performing vendors? in last 8 months
+Generated SQL:
+SELECT
+  VendorName,
+  SUM(NetAmount) AS TotalPurchaseAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -8, GETDATE())
+GROUP BY
+  VendorName
+ORDER BY
+  TotalPurchaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:36:04] Query: Which vendor supplies the most material?
+Top 4 Initial: Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 13:36:07
+Query: Which vendor supplies the most material?
+Error: Found 1 issues while parsing string.
+Line 11, Position 1: Found unparsable section: 'LIMIT 1;'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:36:10
+Query: Which vendor supplies the most material?
+Generated SQL:
+SELECT TOP 1
+  pom.VendorName,
+  SUM(pod.Quantity) AS TotalMaterialQuantity
+FROM Purchase.vw_ai_POMain AS pom
+JOIN Purchase.vw_ai_POItemDetail AS pod
+  ON pom.PONo = pod.PONo
+GROUP BY
+  pom.VendorName
+ORDER BY
+  TotalMaterialQuantity DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:38:50] Query: Show procurement trend over time. for last 5 months
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:38:54
+Query: Show procurement trend over time. for last 5 months
+Generated SQL:
+SELECT
+  FORMAT(DocumentDate, 'yyyy-MM') AS PurchaseMonth,
+  SUM(NetAmount) AS TotalProcurementAmount
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate >= DATEADD(month, -5, GETDATE())
+GROUP BY
+  FORMAT(DocumentDate, 'yyyy-MM')
+ORDER BY
+  PurchaseMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:43:45] Query: Which vendors are consistently improving their procurement value over time of last one year? 
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 13:44:10
+Query: Which vendors are consistently improving their procurement value over time of last one year? 
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'To identify vendors that are consistentl...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:44:12
+Query: Which vendors are consistently improving their procurement value over time of last one year? 
+Generated SQL:
+WITH MonthlyVendorAverages AS (
+    SELECT 
+        VendorName,
+        DATEPART(YEAR, DocumentDate) AS OrderYear,
+        DATEPART(MONTH, DocumentDate) AS OrderMonth,
+        AVG(NetAmount) AS AvgNetAmount
+    FROM Purchase.vw_ai_POMain
+    WHERE DocumentDate >= DATEADD(YEAR, -1, GETDATE())
+    GROUP BY VendorName, DATEPART(YEAR, DocumentDate), DATEPART(MONTH, DocumentDate)
+),
+VendorTrends AS (
+    SELECT 
+        VendorName,
+        AvgNetAmount,
+        LAG(AvgNetAmount) OVER (PARTITION BY VendorName ORDER BY OrderYear, OrderMonth) AS PrevMonthAvg
+    FROM MonthlyVendorAverages
+),
+TrendAnalysis AS (
+    SELECT 
+        VendorName,
+        COUNT(*) AS TotalMonths,
+        SUM(CASE WHEN AvgNetAmount < PrevMonthAvg THEN 1 ELSE 0 END) AS ImprovementCount
+    FROM VendorTrends
+    WHERE PrevMonthAvg IS NOT NULL
+    GROUP BY VendorName
+)
+SELECT 
+    VendorName,
+    (CAST(ImprovementCount AS FLOAT) / TotalMonths) * 100 AS ImprovementPercentage
+FROM TrendAnalysis
+WHERE TotalMonths >= 4 
+  AND (CAST(ImprovementCount AS FLOAT) / TotalMonths) >= 0.6
+ORDER BY ImprovementPercentage DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:58:08] Query: Which vendors are consistently improving their procurement value over time of last one year?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:58:34
+Query: Which vendors are consistently improving their procurement value over time of last one year?
+Generated SQL:
+WITH VendorMonthlyRates AS (
+    -- Calculate the average PORate for each vendor per month within the last year
+    SELECT
+        pm.VendorNo,
+        pm.VendorName,
+        -- Extract the first day of the month for grouping
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1) AS MonthStart,
+        AVG(pid.PORate) AS AverageMonthlyPORate
+    FROM
+        Purchase.vw_ai_POMain AS pm
+    JOIN
+        Purchase.vw_ai_POIndentItemDetail AS pid
+        ON pm.PONo = pid.PONo
+    WHERE
+        -- Filter for data within the last one year
+        pm.DocumentDate >= DATEADD(year, -1, GETDATE())
+        AND pm.DocumentDate <= GETDATE()
+    GROUP BY
+        pm.VendorNo,
+        pm.VendorName,
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1)
+),
+VendorRateTrends AS (
+    -- Compare current month's average rate with the previous month's average rate for each vendor
+    SELECT
+        VendorNo,
+        VendorName,
+        MonthStart,
+        AverageMonthlyPORate,
+        -- Get the average rate from the previous month for the same vendor
+        LAG(AverageMonthlyPORate, 1, AverageMonthlyPORate) OVER (PARTITION BY VendorNo ORDER BY MonthStart) AS PreviousMonthRate
+    FROM
+        VendorMonthlyRates
+),
+VendorImprovementCounts AS (
+    -- Count how many times a vendor's average rate improved (decreased) month-over-month
+    SELECT
+        VendorNo,
+        VendorName,
+        -- Count instances where the current month's rate is less than the previous month's rate
+        SUM(CASE WHEN AverageMonthlyPORate < PreviousMonthRate THEN 1 ELSE 0 END) AS ImprovementCount,
+        -- Total number of month-over-month comparisons possible (number of months - 1)
+        COUNT(MonthStart) - 1 AS TotalComparisons
+    FROM
+        VendorRateTrends
+    GROUP BY
+        VendorNo,
+        VendorName
+    HAVING
+        -- Only consider vendors with at least two months of data for comparison
+        COUNT(MonthStart) > 1
+)
+-- Select vendors that show consistent improvement based on a defined threshold
+SELECT
+    vic.VendorNo,
+    vic.VendorName,
+    vic.ImprovementCount,
+    vic.TotalComparisons,
+    -- Calculate the ratio of improvements to total comparisons
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons AS ImprovementRatio
+FROM
+    VendorImprovementCounts AS vic
+WHERE
+    -- Filter for vendors where the improvement ratio meets a consistency threshold (e.g., 60%)
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons >= 0.6
+ORDER BY
+    ImprovementRatio DESC, VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 13:59:00] Query: Which vendors are consistently improving their procurement value over time of last one year?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 13:59:06
+Query: Which vendors are consistently improving their procurement value over time of last one year?
+Generated SQL:
+WITH VendorMonthlyRates AS (
+    -- Calculate the average PORate for each vendor per month within the last year
+    SELECT
+        pm.VendorNo,
+        pm.VendorName,
+        -- Extract the first day of the month for grouping
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1) AS MonthStart,
+        AVG(pid.PORate) AS AverageMonthlyPORate
+    FROM
+        Purchase.vw_ai_POMain AS pm
+    JOIN
+        Purchase.vw_ai_POIndentItemDetail AS pid
+        ON pm.PONo = pid.PONo
+    WHERE
+        -- Filter for data within the last one year
+        pm.DocumentDate >= DATEADD(year, -1, GETDATE())
+        AND pm.DocumentDate <= GETDATE()
+    GROUP BY
+        pm.VendorNo,
+        pm.VendorName,
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1)
+),
+VendorRateTrends AS (
+    -- Compare current month's average rate with the previous month's average rate for each vendor
+    SELECT
+        VendorNo,
+        VendorName,
+        MonthStart,
+        AverageMonthlyPORate,
+        -- Get the average rate from the previous month for the same vendor
+        LAG(AverageMonthlyPORate, 1, AverageMonthlyPORate) OVER (PARTITION BY VendorNo ORDER BY MonthStart) AS PreviousMonthRate
+    FROM
+        VendorMonthlyRates
+),
+VendorImprovementCounts AS (
+    -- Count how many times a vendor's average rate improved (decreased) month-over-month
+    SELECT
+        VendorNo,
+        VendorName,
+        -- Count instances where the current month's rate is less than the previous month's rate
+        SUM(CASE WHEN AverageMonthlyPORate < PreviousMonthRate THEN 1 ELSE 0 END) AS ImprovementCount,
+        -- Total number of month-over-month comparisons possible (number of months - 1)
+        COUNT(MonthStart) - 1 AS TotalComparisons
+    FROM
+        VendorRateTrends
+    GROUP BY
+        VendorNo,
+        VendorName
+    HAVING
+        -- Only consider vendors with at least two months of data for comparison
+        COUNT(MonthStart) > 1
+)
+-- Select vendors that show consistent improvement based on a defined threshold
+SELECT
+    vic.VendorNo,
+    vic.VendorName,
+    vic.ImprovementCount,
+    vic.TotalComparisons,
+    -- Calculate the ratio of improvements to total comparisons
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons AS ImprovementRatio
+FROM
+    VendorImprovementCounts AS vic
+WHERE
+    -- Filter for vendors where the improvement ratio meets a consistency threshold (e.g., 60%)
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons >= 0.6
+ORDER BY
+    ImprovementRatio DESC, VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:00:01] Query: Which vendors are consistently improving their procurement value over time of last one year?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:00:22
+Query: Which vendors are consistently improving their procurement value over time of last one year?
+Generated SQL:
+WITH VendorMonthlyRates AS (
+    -- Calculate the average PORate for each vendor per month within the last year
+    SELECT
+        pm.VendorNo,
+        pm.VendorName,
+        -- Extract the first day of the month for grouping
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1) AS MonthStart,
+        AVG(pid.PORate) AS AverageMonthlyPORate
+    FROM
+        Purchase.vw_ai_POMain AS pm
+    JOIN
+        Purchase.vw_ai_POIndentItemDetail AS pid
+        ON pm.PONo = pid.PONo
+    WHERE
+        -- Filter for data within the last one year
+        pm.DocumentDate >= DATEADD(year, -1, GETDATE())
+        AND pm.DocumentDate <= GETDATE()
+    GROUP BY
+        pm.VendorNo,
+        pm.VendorName,
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1)
+),
+VendorRateTrends AS (
+    -- Compare current month's average rate with the previous month's average rate for each vendor
+    SELECT
+        VendorNo,
+        VendorName,
+        MonthStart,
+        AverageMonthlyPORate,
+        -- Get the average rate from the previous month for the same vendor
+        LAG(AverageMonthlyPORate, 1, AverageMonthlyPORate) OVER (PARTITION BY VendorNo ORDER BY MonthStart) AS PreviousMonthRate
+    FROM
+        VendorMonthlyRates
+),
+VendorImprovementCounts AS (
+    -- Count how many times a vendor's average rate improved (decreased) month-over-month
+    SELECT
+        VendorNo,
+        VendorName,
+        -- Count instances where the current month's rate is less than the previous month's rate
+        SUM(CASE WHEN AverageMonthlyPORate < PreviousMonthRate THEN 1 ELSE 0 END) AS ImprovementCount,
+        -- Total number of month-over-month comparisons possible (number of months - 1)
+        COUNT(MonthStart) - 1 AS TotalComparisons
+    FROM
+        VendorRateTrends
+    GROUP BY
+        VendorNo,
+        VendorName
+    HAVING
+        -- Only consider vendors with at least two months of data for comparison
+        COUNT(MonthStart) > 1
+)
+-- Select vendors that show consistent improvement based on a defined threshold
+SELECT
+    vic.VendorNo,
+    vic.VendorName,
+    vic.ImprovementCount,
+    vic.TotalComparisons,
+    -- Calculate the ratio of improvements to total comparisons
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons AS ImprovementRatio
+FROM
+    VendorImprovementCounts AS vic
+WHERE
+    -- Filter for vendors where the improvement ratio meets a consistency threshold (e.g., 60%)
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons >= 0.6
+ORDER BY
+    ImprovementRatio DESC, VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:00:45] Query: Which vendors are consistently improving their procurement value over time of last one year?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:00:52
+Query: Which vendors are consistently improving their procurement value over time of last one year?
+Generated SQL:
+WITH VendorMonthlyRates AS (
+    -- Calculate the average PORate for each vendor per month within the last year
+    SELECT
+        pm.VendorNo,
+        pm.VendorName,
+        -- Extract the first day of the month for grouping
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1) AS MonthStart,
+        AVG(pid.PORate) AS AverageMonthlyPORate
+    FROM
+        Purchase.vw_ai_POMain AS pm
+    JOIN
+        Purchase.vw_ai_POIndentItemDetail AS pid
+        ON pm.PONo = pid.PONo
+    WHERE
+        -- Filter for data within the last one year
+        pm.DocumentDate >= DATEADD(year, -1, GETDATE())
+        AND pm.DocumentDate <= GETDATE()
+    GROUP BY
+        pm.VendorNo,
+        pm.VendorName,
+        DATEFROMPARTS(YEAR(pm.DocumentDate), MONTH(pm.DocumentDate), 1)
+),
+VendorRateTrends AS (
+    -- Compare current month's average rate with the previous month's average rate for each vendor
+    SELECT
+        VendorNo,
+        VendorName,
+        MonthStart,
+        AverageMonthlyPORate,
+        -- Get the average rate from the previous month for the same vendor
+        LAG(AverageMonthlyPORate, 1, AverageMonthlyPORate) OVER (PARTITION BY VendorNo ORDER BY MonthStart) AS PreviousMonthRate
+    FROM
+        VendorMonthlyRates
+),
+VendorImprovementCounts AS (
+    -- Count how many times a vendor's average rate improved (decreased) month-over-month
+    SELECT
+        VendorNo,
+        VendorName,
+        -- Count instances where the current month's rate is less than the previous month's rate
+        SUM(CASE WHEN AverageMonthlyPORate < PreviousMonthRate THEN 1 ELSE 0 END) AS ImprovementCount,
+        -- Total number of month-over-month comparisons possible (number of months - 1)
+        COUNT(MonthStart) - 1 AS TotalComparisons
+    FROM
+        VendorRateTrends
+    GROUP BY
+        VendorNo,
+        VendorName
+    HAVING
+        -- Only consider vendors with at least two months of data for comparison
+        COUNT(MonthStart) > 1
+)
+-- Select vendors that show consistent improvement based on a defined threshold
+SELECT
+    vic.VendorNo,
+    vic.VendorName,
+    vic.ImprovementCount,
+    vic.TotalComparisons,
+    -- Calculate the ratio of improvements to total comparisons
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons AS ImprovementRatio
+FROM
+    VendorImprovementCounts AS vic
+WHERE
+    -- Filter for vendors where the improvement ratio meets a consistency threshold (e.g., 60%)
+    CAST(vic.ImprovementCount AS DECIMAL(5,2)) / vic.TotalComparisons >= 0.6
+ORDER BY
+    ImprovementRatio DESC, VendorName;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:34:35] Query: Which vendors are consistently improving their procurement value over time of last 2 year?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 14:34:57
+Query: Which vendors are consistently improving their procurement value over time of last 2 year?
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'To identify vendors that are "consistent...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:34:59
+Query: Which vendors are consistently improving their procurement value over time of last 2 year?
+Generated SQL:
+WITH VendorProcurement AS (
+    SELECT 
+        VendorName,
+        SUM(CASE WHEN DocumentDate >= DATEADD(MONTH, -6, GETDATE()) THEN NetAmount ELSE 0 END) AS Period1_Last6M,
+        SUM(CASE WHEN DocumentDate >= DATEADD(MONTH, -12, GETDATE()) AND DocumentDate < DATEADD(MONTH, -6, GETDATE()) THEN NetAmount ELSE 0 END) AS Period2_6to12M,
+        SUM(CASE WHEN DocumentDate >= DATEADD(MONTH, -12, GETDATE()) THEN NetAmount ELSE 0 END) AS Last12M,
+        SUM(CASE WHEN DocumentDate >= DATEADD(MONTH, -24, GETDATE()) AND DocumentDate < DATEADD(MONTH, -12, GETDATE()) THEN NetAmount ELSE 0 END) AS Previous12M
+    FROM Purchase.vw_ai_POMain
+    WHERE DocumentDate >= DATEADD(MONTH, -24, GETDATE())
+    GROUP BY VendorName
+)
+SELECT 
+    VendorName,
+    Period1_Last6M,
+    Period2_6to12M,
+    Last12M,
+    Previous12M
+FROM VendorProcurement
+WHERE Period1_Last6M > Period2_6to12M 
+  AND Last12M > Previous12M
+  AND Period1_Last6M > 0
+ORDER BY Last12M DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:37:31] Query: Is there any relationship between the rate charged by vendors and the quantity purchased?
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:37:46
+Query: Is there any relationship between the rate charged by vendors and the quantity purchased?
+Generated SQL:
+SELECT
+    pbm.VendorName,
+    pbid.ItemDescription,
+    pbid.Qty AS PurchasedQuantity,
+    pbid.BasicAmount / pbid.Qty AS ChargedRate
+FROM
+    Finance.vw_ai_PurchaseBillItemDetail AS pbid
+JOIN
+    Finance.vw_ai_PurchaseBillMain AS pbm
+    ON pbid.PurchaseBillNo = pbm.PurchaseBillNo
+WHERE
+    pbid.Qty > 0 -- Exclude items with zero quantity to prevent division by zero for rate calculation
+ORDER BY
+    pbm.VendorName,
+    pbid.ItemDescription,
+    pbid.Qty DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:39:23] Query: Which vendors contribute to nearly 80% of our procurement spend?
+in the last one year window
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:39:30
+Query: Which vendors contribute to nearly 80% of our procurement spend?
+in the last one year window
+Generated SQL:
+WITH VendorSpend AS (
+    -- Calculate total spend for each vendor in the last year
+    SELECT
+        p.VendorNo,
+        p.VendorName,
+        SUM(p.NetAmount) AS TotalVendorSpend
+    FROM
+        Purchase.vw_ai_POMain AS p
+    WHERE
+        p.DocumentDate >= DATEADD(year, -1, GETDATE()) -- Filter for the last one year window
+    GROUP BY
+        p.VendorNo,
+        p.VendorName
+),
+RankedVendorSpend AS (
+    -- Calculate percentage of total spend and cumulative percentage for each vendor
+    SELECT
+        vs.VendorNo,
+        vs.VendorName,
+        vs.TotalVendorSpend,
+        SUM(vs.TotalVendorSpend) OVER () AS GrandTotalSpend,
+        (vs.TotalVendorSpend * 100.0 / SUM(vs.TotalVendorSpend) OVER ()) AS PercentageOfTotalSpend,
+        SUM(vs.TotalVendorSpend) OVER (ORDER BY vs.TotalVendorSpend DESC) AS CumulativeSpend,
+        SUM(vs.TotalVendorSpend) OVER (ORDER BY vs.TotalVendorSpend DESC) * 100.0 / SUM(vs.TotalVendorSpend) OVER () AS CumulativePercentage
+    FROM
+        VendorSpend AS vs
+)
+-- Select vendors whose cumulative spend contributes to nearly 80% of the total
+SELECT
+    rvs.VendorNo,
+    rvs.VendorName,
+    rvs.TotalVendorSpend,
+    rvs.PercentageOfTotalSpend,
+    rvs.CumulativePercentage
+FROM
+    RankedVendorSpend AS rvs
+WHERE
+    rvs.CumulativePercentage <= 80.0
+ORDER BY
+    rvs.TotalVendorSpend DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:40:01] Query: Which items have the highest variability in purchase rate across vendors?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:40:06
+Query: Which items have the highest variability in purchase rate across vendors?
+Generated SQL:
+SELECT
+  poid.ItemNo,
+  poid.ItemDescription,
+  STDEV(poid.Rate) AS RateStandardDeviation
+FROM Purchase.vw_ai_POItemDetail AS poid
+GROUP BY
+  poid.ItemNo,
+  poid.ItemDescription
+HAVING
+  COUNT(DISTINCT poid.PONo) > 1 -- Ensure the item has been purchased in at least two different POs to calculate variability
+ORDER BY
+  RateStandardDeviation DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:40:38] Query: Compare procurement trends before and after 2020.
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:40:48
+Query: Compare procurement trends before and after 2020.
+Generated SQL:
+SELECT
+  YEAR(DocumentDate) AS ProcurementYear,
+  COUNT(DISTINCT PONo) AS TotalPurchaseOrders,
+  SUM(NetAmount) AS TotalProcurementValue,
+  AVG(NetAmount) AS AveragePurchaseOrderValue
+FROM Purchase.vw_ai_POMain
+WHERE
+  DocumentDate IS NOT NULL
+GROUP BY
+  YEAR(DocumentDate)
+ORDER BY
+  ProcurementYear;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:41:44] Query: Which vendors deliver the highest procurement value while maintaining the highest acceptance percentage?
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:41:58
+Query: Which vendors deliver the highest procurement value while maintaining the highest acceptance percentage?
+Generated SQL:
+SELECT
+    pom.VendorNo,
+    pom.VendorName,
+    SUM(poid.NetAmount) AS TotalProcurementValue,
+    SUM(poid.Quantity) AS TotalOrderedQuantity,
+    SUM(poid.AcceptedQty) AS TotalAcceptedQuantity,
+    CASE
+        WHEN SUM(poid.Quantity) > 0 THEN (CAST(SUM(poid.AcceptedQty) AS DECIMAL(18, 4)) / SUM(poid.Quantity)) * 100
+        ELSE 0
+    END AS AcceptancePercentage
+FROM
+    Purchase.vw_ai_POMain AS pom
+JOIN
+    Purchase.vw_ai_POItemDetail AS poid
+    ON pom.PONo = poid.PONo
+GROUP BY
+    pom.VendorNo,
+    pom.VendorName
+ORDER BY
+    TotalProcurementValue DESC,
+    AcceptancePercentage DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:43:55] Query: Show procurement concentration across vendors.
+Top 4 Initial: Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:43:59
+Query: Show procurement concentration across vendors.
+Generated SQL:
+SELECT
+  pbm.VendorName,
+  SUM(pbm.NetAmount) AS TotalProcurementAmount,
+  (SUM(pbm.NetAmount) * 100.0 / SUM(SUM(pbm.NetAmount)) OVER ()) AS ProcurementConcentrationPercentage
+FROM Finance.vw_ai_PurchaseBillMain AS pbm
+GROUP BY
+  pbm.VendorNo,
+  pbm.VendorName
+ORDER BY
+  ProcurementConcentrationPercentage DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:44:35] Query: How diversified is procurement across departments?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:44:46
+Query: How diversified is procurement across departments?
+Generated SQL:
+WITH DepartmentProcurement AS (
+    SELECT
+        DeptNo,
+        DeptName,
+        COUNT(PONo) AS NumberOfPurchaseOrders,
+        SUM(NetAmount) AS TotalProcurementAmount
+    FROM
+        Purchase.vw_ai_POMain
+    GROUP BY
+        DeptNo,
+        DeptName
+)
+SELECT
+    (SELECT COUNT(DISTINCT DeptNo) FROM Purchase.vw_ai_POMain) AS TotalUniqueDepartmentsInProcurement,
+    dp.DeptName,
+    dp.NumberOfPurchaseOrders,
+    CAST(dp.NumberOfPurchaseOrders * 100.0 / SUM(dp.NumberOfPurchaseOrders) OVER () AS DECIMAL(10, 2)) AS PercentageOfTotalPOs,
+    dp.TotalProcurementAmount,
+    CAST(dp.TotalProcurementAmount * 100.0 / SUM(dp.TotalProcurementAmount) OVER () AS DECIMAL(10, 2)) AS PercentageOfTotalAmount
+FROM
+    DepartmentProcurement dp
+ORDER BY
+    dp.TotalProcurementAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:45:19] Query: Compare procurement patterns across companies over time.
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:45:28
+Query: Compare procurement patterns across companies over time.
+Generated SQL:
+SELECT
+    p.CompanyNo,
+    p.CompanyAlias,
+    YEAR(p.DocumentDate) AS ProcurementYear,
+    MONTH(p.DocumentDate) AS ProcurementMonth, -- Added for monthly granularity
+    SUM(p.NetAmount) AS TotalProcurementAmount,
+    COUNT(DISTINCT p.PONo) AS NumberOfPurchaseOrders,
+    AVG(p.NetAmount) AS AveragePurchaseOrderValue,
+    COUNT(DISTINCT p.VendorNo) AS NumberOfUniqueVendors
+FROM
+    Purchase.vw_ai_POMain AS p
+GROUP BY
+    p.CompanyNo,
+    p.CompanyAlias,
+    YEAR(p.DocumentDate),
+    MONTH(p.DocumentDate)
+ORDER BY
+    p.CompanyAlias,
+    ProcurementYear,
+    ProcurementMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 14:46:47] Query: Identify procurement outliers by purchase amount.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 14:46:58
+Query: Identify procurement outliers by purchase amount.
+Generated SQL:
+WITH PurchaseStats AS (
+  SELECT
+    AVG(NetAmount) AS AvgNetAmount,
+    STDEV(NetAmount) AS StdDevNetAmount
+  FROM Purchase.vw_ai_POMain
+)
+SELECT
+  p.PONo,
+  p.DocumentNoYearly,
+  p.DocumentDate,
+  p.VendorName,
+  p.POPurchaseCategory,
+  p.StatusName,
+  p.NetAmount
+FROM Purchase.vw_ai_POMain AS p
+CROSS JOIN PurchaseStats AS ps
+WHERE
+  -- Identify purchases where NetAmount is significantly higher than the average.
+  -- A common threshold for outliers is 2 or 3 standard deviations from the mean.
+  -- This query uses 2 standard deviations above the average.
+  p.NetAmount > (ps.AvgNetAmount + (2 * ps.StdDevNetAmount));
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:14:03] Query: dentify procurement outliers by purchase amount.
+Top 4 Initial: Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:14:12
+Query: dentify procurement outliers by purchase amount.
+Generated SQL:
+WITH PurchaseStats AS (
+    SELECT
+        AVG(p.NetAmount) AS AvgNetAmount,
+        STDEV(p.NetAmount) AS StdDevNetAmount
+    FROM
+        Purchase.vw_ai_POMain AS p
+)
+SELECT
+    p.PONo,
+    p.DocumentNoYearly,
+    p.DocumentDate,
+    p.VendorName,
+    p.NetAmount
+FROM
+    Purchase.vw_ai_POMain AS p
+CROSS JOIN
+    PurchaseStats AS ps
+WHERE
+    -- Identify outliers as purchases with NetAmount significantly higher or lower than the average.
+    -- Using 2 standard deviations as a common threshold for outliers.
+    (p.NetAmount > (ps.AvgNetAmount + 2 * ps.StdDevNetAmount)
+    OR p.NetAmount < (ps.AvgNetAmount - 2 * ps.StdDevNetAmount))
+    -- Ensure StdDevNetAmount is not NULL (e.g., if there's only one record) or zero
+    AND ps.StdDevNetAmount IS NOT NULL AND ps.StdDevNetAmount > 0;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:14:45] Query: Identify procurement outliers by purchase amount.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:14:58
+Query: Identify procurement outliers by purchase amount.
+Generated SQL:
+WITH PurchaseStats AS (
+  SELECT
+    AVG(NetAmount) AS AvgNetAmount,
+    STDEV(NetAmount) AS StdDevNetAmount
+  FROM Purchase.vw_ai_POMain
+)
+SELECT
+  p.PONo,
+  p.DocumentNoYearly,
+  p.DocumentDate,
+  p.VendorName,
+  p.POPurchaseCategory,
+  p.StatusName,
+  p.NetAmount
+FROM Purchase.vw_ai_POMain AS p
+CROSS JOIN PurchaseStats AS ps
+WHERE
+  -- Identify purchases where NetAmount is significantly higher than the average.
+  -- A common threshold for outliers is 2 or 3 standard deviations from the mean.
+  -- This query uses 2 standard deviations above the average.
+  p.NetAmount > (ps.AvgNetAmount + (2 * ps.StdDevNetAmount));
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:15:57] Query: Compare procurement patterns across companies over time.
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:16:07
+Query: Compare procurement patterns across companies over time.
+Generated SQL:
+SELECT
+    p.CompanyNo,
+    p.CompanyAlias,
+    YEAR(p.DocumentDate) AS ProcurementYear,
+    MONTH(p.DocumentDate) AS ProcurementMonth, -- Added for monthly granularity
+    SUM(p.NetAmount) AS TotalProcurementAmount,
+    COUNT(DISTINCT p.PONo) AS NumberOfPurchaseOrders,
+    AVG(p.NetAmount) AS AveragePurchaseOrderValue,
+    COUNT(DISTINCT p.VendorNo) AS NumberOfUniqueVendors
+FROM
+    Purchase.vw_ai_POMain AS p
+GROUP BY
+    p.CompanyNo,
+    p.CompanyAlias,
+    YEAR(p.DocumentDate),
+    MONTH(p.DocumentDate)
+ORDER BY
+    p.CompanyAlias,
+    ProcurementYear,
+    ProcurementMonth;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:16:39] Query: How diversified is procurement across departments?
+Top 4 Initial: Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:16:50
+Query: How diversified is procurement across departments?
+Generated SQL:
+WITH DepartmentProcurement AS (
+    SELECT
+        DeptNo,
+        DeptName,
+        COUNT(PONo) AS NumberOfPurchaseOrders,
+        SUM(NetAmount) AS TotalProcurementAmount
+    FROM
+        Purchase.vw_ai_POMain
+    GROUP BY
+        DeptNo,
+        DeptName
+)
+SELECT
+    (SELECT COUNT(DISTINCT DeptNo) FROM Purchase.vw_ai_POMain) AS TotalUniqueDepartmentsInProcurement,
+    dp.DeptName,
+    dp.NumberOfPurchaseOrders,
+    CAST(dp.NumberOfPurchaseOrders * 100.0 / SUM(dp.NumberOfPurchaseOrders) OVER () AS DECIMAL(10, 2)) AS PercentageOfTotalPOs,
+    dp.TotalProcurementAmount,
+    CAST(dp.TotalProcurementAmount * 100.0 / SUM(dp.TotalProcurementAmount) OVER () AS DECIMAL(10, 2)) AS PercentageOfTotalAmount
+FROM
+    DepartmentProcurement dp
+ORDER BY
+    dp.TotalProcurementAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:20:11] Query: Identify procurement outliers by purchase amount.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:20:31
+Query: Identify procurement outliers by purchase amount.
+Generated SQL:
+WITH PurchaseStats AS (
+    -- Calculate the average and standard deviation of NetAmount across all purchases
+    SELECT
+        AVG(NetAmount) AS AvgNetAmount,
+        STDEV(NetAmount) AS StdDevNetAmount
+    FROM Purchase.vw_ai_POMain
+),
+PurchaseZScore AS (
+    -- Calculate the Z-score for each purchase
+    SELECT
+        p.PONo,
+        p.DocumentNoYearly,
+        p.DocumentDate,
+        p.VendorName,
+        p.NetAmount,
+        p.CompanyAlias,
+        p.DivisionCode,
+        p.DeptName,
+        p.CreatedByPrintingName,
+        p.AuthorizedByPrintingName,
+        -- Handle cases where standard deviation is zero or NULL to prevent division by zero
+        CASE
+            WHEN ps.StdDevNetAmount IS NULL OR ps.StdDevNetAmount = 0 THEN NULL
+            ELSE (p.NetAmount - ps.AvgNetAmount) / ps.StdDevNetAmount
+        END AS ZScore
+    FROM Purchase.vw_ai_POMain AS p
+    CROSS JOIN PurchaseStats AS ps
+)
+-- Select purchases identified as outliers based on their Z-score
+SELECT
+    PONo,
+    DocumentNoYearly,
+    DocumentDate,
+    VendorName,
+    NetAmount,
+    CompanyAlias,
+    DivisionCode,
+    DeptName,
+    CreatedByPrintingName,
+    AuthorizedByPrintingName,
+    ZScore
+FROM PurchaseZScore
+WHERE ABS(ZScore) > 2 -- Filter for purchases where the absolute Z-score is greater than 2
+ORDER BY NetAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:29:32] Query: which vendors are becoming expensive?
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:29:56
+Query: which vendors are becoming expensive?
+Generated SQL:
+WITH RecentPeriodBills AS (
+    -- Calculate the average bill amount and count of bills for each vendor in the most recent period (e.g., last 3 months)
+    SELECT
+        VendorNo,
+        VendorName,
+        AVG(VendorBillAmount) AS RecentAvgBillAmount,
+        COUNT(PurchaseBillNo) AS RecentBillCount
+    FROM
+        Finance.vw_ai_PurchaseBillMain
+    WHERE
+        DocumentDate >= DATEADD(month, -3, GETDATE()) -- Bills from the last 3 months
+        AND DocumentDate <= GETDATE()
+    GROUP BY
+        VendorNo, VendorName
+),
+PreviousPeriodBills AS (
+    -- Calculate the average bill amount and count of bills for each vendor in the preceding period (e.g., 3 to 6 months ago)
+    SELECT
+        VendorNo,
+        VendorName,
+        AVG(VendorBillAmount) AS PreviousAvgBillAmount,
+        COUNT(PurchaseBillNo) AS PreviousBillCount
+    FROM
+        Finance.vw_ai_PurchaseBillMain
+    WHERE
+        DocumentDate >= DATEADD(month, -6, GETDATE()) -- Bills from 3 to 6 months ago
+        AND DocumentDate < DATEADD(month, -3, GETDATE())
+    GROUP BY
+        VendorNo, VendorName
+)
+SELECT
+    R.VendorNo,
+    R.VendorName,
+    R.RecentAvgBillAmount,
+    P.PreviousAvgBillAmount,
+    (R.RecentAvgBillAmount - P.PreviousAvgBillAmount) AS AmountIncrease,
+    -- Calculate the percentage increase, handling division by zero for previous period average
+    CASE
+        WHEN P.PreviousAvgBillAmount > 0 THEN ((R.RecentAvgBillAmount - P.PreviousAvgBillAmount) / P.PreviousAvgBillAmount) * 100
+        ELSE NULL
+    END AS PercentageIncrease,
+    R.RecentBillCount,
+    P.PreviousBillCount
+FROM
+    RecentPeriodBills R
+INNER JOIN
+    PreviousPeriodBills P ON R.VendorNo = P.VendorNo
+WHERE
+    R.RecentAvgBillAmount > P.PreviousAvgBillAmount -- Only show vendors where the average bill amount has increased
+    AND P.PreviousAvgBillAmount IS NOT NULL -- Ensure there was activity in the previous period to compare against
+    -- Optional: Add a minimum number of bills in each period to filter out vendors with very few transactions
+    -- AND R.RecentBillCount >= 2
+    -- AND P.PreviousBillCount >= 2
+ORDER BY
+    PercentageIncrease DESC, AmountIncrease DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:31:00] Query: expense can't be tracked on just the basis of last order. since the quantity also changes the amount
+Top 4 Initial: Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:31:20
+Query: expense can't be tracked on just the basis of last order. since the quantity also changes the amount
+Generated SQL:
+WITH VendorItemPrices AS (
+    SELECT
+        PBM.VendorNo,
+        PBM.VendorName,
+        PBM.DocumentDate,
+        PBID.ItemNo,
+        PBID.MakeNo,
+        -- Calculate the unit price for each item in the bill.
+        -- We use BasicAmount / Qty to normalize the expense by quantity.
+        CASE
+            WHEN PBID.Qty > 0 THEN PBID.BasicAmount / PBID.Qty
+            ELSE 0 -- Handle cases where quantity might be zero to avoid division by zero
+        END AS UnitPrice
+    FROM
+        Finance.vw_ai_PurchaseBillItemDetail AS PBID
+    INNER JOIN
+        Finance.vw_ai_PurchaseBillMain AS PBM
+        ON PBID.PurchaseBillNo = PBM.PurchaseBillNo
+    WHERE
+        PBID.Qty > 0 -- Only consider items with a positive quantity for meaningful unit price calculation
+),
+RecentPeriodPrices AS (
+    -- Calculate the average unit price for each vendor in the most recent period (e.g., last 3 months)
+    SELECT
+        VendorNo,
+        VendorName,
+        AVG(UnitPrice) AS RecentAvgUnitPrice,
+        COUNT(DISTINCT ItemNo) AS RecentDistinctItemCount -- Count distinct items to understand the variety of items purchased
+    FROM
+        VendorItemPrices
+    WHERE
+        DocumentDate >= DATEADD(month, -3, GETDATE()) -- Bills from the last 3 months
+        AND DocumentDate <= GETDATE()
+    GROUP BY
+        VendorNo, VendorName
+),
+PreviousPeriodPrices AS (
+    -- Calculate the average unit price for each vendor in the preceding period (e.g., 3 to 6 months ago)
+    SELECT
+        VendorNo,
+        VendorName,
+        AVG(UnitPrice) AS PreviousAvgUnitPrice,
+        COUNT(DISTINCT ItemNo) AS PreviousDistinctItemCount
+    FROM
+        VendorItemPrices
+    WHERE
+        DocumentDate >= DATEADD(month, -6, GETDATE()) -- Bills from 3 to 6 months ago
+        AND DocumentDate < DATEADD(month, -3, GETDATE())
+    GROUP BY
+        VendorNo, VendorName
+)
+SELECT
+    R.VendorNo,
+    R.VendorName,
+    R.RecentAvgUnitPrice,
+    P.PreviousAvgUnitPrice,
+    (R.RecentAvgUnitPrice - P.PreviousAvgUnitPrice) AS UnitPriceIncreaseAmount,
+    -- Calculate the percentage increase in average unit price, handling division by zero
+    CASE
+        WHEN P.PreviousAvgUnitPrice > 0 THEN ((R.RecentAvgUnitPrice - P.PreviousAvgUnitPrice) / P.PreviousAvgUnitPrice) * 100
+        ELSE NULL
+    END AS UnitPricePercentageIncrease,
+    R.RecentDistinctItemCount,
+    P.PreviousDistinctItemCount
+FROM
+    RecentPeriodPrices R
+INNER JOIN
+    PreviousPeriodPrices P ON R.VendorNo = P.VendorNo
+WHERE
+    R.RecentAvgUnitPrice > P.PreviousAvgUnitPrice -- Only show vendors where the average unit price has increased
+    AND P.PreviousAvgUnitPrice IS NOT NULL -- Ensure there was activity in the previous period to compare against
+    -- Optional: Add a minimum number of distinct items purchased from the vendor in each period
+    -- to filter out vendors with very few transactions and ensure a more reliable average.
+    -- AND R.RecentDistinctItemCount >= 2
+    -- AND P.PreviousDistinctItemCount >= 2
+ORDER BY
+    UnitPricePercentageIncrease DESC, UnitPriceIncreaseAmount DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:31:59] Query: this also seems wrong try again to find
+Top 4 Initial: Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POIndentItemDetail, Finance.vw_ai_PurchaseBillItemDetail
+------------------------------------------------------------
+[RETRY 1] Timestamp: 2026-07-07 15:32:23
+Query: this also seems wrong try again to find
+Error: Found 1 issues while parsing string.
+Line 1, Position 1: Found unparsable section: 'sql\nWITH ItemUnitPrices AS (\n    -- Calc...'
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:32:26
+Query: this also seems wrong try again to find
+Generated SQL:
+WITH ItemUnitPrices AS (
+    -- Calculate the unit price for each item in each purchase bill detail
+    SELECT
+        PBM.VendorNo,
+        PBM.VendorName,
+        PBID.ItemNo,
+        PBID.MakeNo,
+        PBM.DocumentDate,
+        CASE
+            WHEN PBID.Qty > 0 THEN PBID.BasicAmount / PBID.Qty
+            ELSE 0
+        END AS UnitPrice
+    FROM
+        Finance.vw_ai_PurchaseBillItemDetail AS PBID
+    INNER JOIN
+        Finance.vw_ai_PurchaseBillMain AS PBM
+        ON PBID.PurchaseBillNo = PBM.PurchaseBillNo
+    WHERE
+        PBID.Qty > 0
+),
+ItemPriceTrends AS (
+    -- Compare the most recent price of each specific item/make per vendor against its average price in the previous period
+    SELECT
+        VendorNo,
+        VendorName,
+        ItemNo,
+        MakeNo,
+        MAX(CASE WHEN DocumentDate >= DATEADD(month, -3, GETDATE()) THEN UnitPrice END) AS RecentPrice,
+        AVG(CASE WHEN DocumentDate >= DATEADD(month, -6, GETDATE()) AND DocumentDate < DATEADD(month, -3, GETDATE()) THEN UnitPrice END) AS PreviousAvgPrice
+    FROM
+        ItemUnitPrices
+    GROUP BY
+        VendorNo, VendorName, ItemNo, MakeNo
+)
+SELECT
+    VendorNo,
+    VendorName,
+    COUNT(*) AS ItemsWithPriceIncrease,
+    AVG(((RecentPrice - PreviousAvgPrice) / NULLIF(PreviousAvgPrice, 0)) * 100) AS AvgPercentageIncrease
+FROM
+    ItemPriceTrends
+WHERE
+    RecentPrice > PreviousAvgPrice
+    AND PreviousAvgPrice IS NOT NULL
+GROUP BY
+    VendorNo, VendorName
+ORDER BY
+    AvgPercentageIncrease DESC;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:46:04] Query: Show me all records where the billed quantity does not match the received quantity.
+Top 4 Initial: Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:46:10
+Query: Show me all records where the billed quantity does not match the received quantity.
+Generated SQL:
+SELECT
+  POItemDetail.*,
+  PurchaseBillItemDetail.PurchaseBillItemDetailNo,
+  PurchaseBillItemDetail.PurchaseBillNo,
+  PurchaseBillItemDetail.GRNNo,
+  PurchaseBillItemDetail.POAmendmentNo,
+  PurchaseBillItemDetail.Qty AS BilledQty,
+  PurchaseBillItemDetail.BasicAmount AS BilledBasicAmount,
+  PurchaseBillItemDetail.WareHouseName,
+  PurchaseBillItemDetail.WareHouseNo
+FROM Purchase.vw_ai_POItemDetail AS POItemDetail
+JOIN Finance.vw_ai_PurchaseBillItemDetail AS PurchaseBillItemDetail
+  ON POItemDetail.PONo = PurchaseBillItemDetail.PONo
+  AND POItemDetail.ItemNo = PurchaseBillItemDetail.ItemNo
+  AND POItemDetail.MakeNo = PurchaseBillItemDetail.MakeNo
+WHERE
+  PurchaseBillItemDetail.Qty <> POItemDetail.ReceivedQty;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:49:13] Query: What is the total basic amount for the item 'CUPPROUS CHLORIDE, 500 GM' ?
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:49:22
+Query: What is the total basic amount for the item 'CUPPROUS CHLORIDE, 500 GM' ?
+Generated SQL:
+SELECT
+  SUM(BasicAmount)
+FROM Finance.vw_ai_PurchaseBillItemDetail
+WHERE
+  ItemDescription = 'CUPPROUS CHLORIDE, 500 GM';
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:51:13] Query: Which Purchase Orders have a total basic amount greater than 50,000?
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:51:20
+Query: Which Purchase Orders have a total basic amount greater than 50,000?
+Generated SQL:
+SELECT
+  PONo
+FROM Purchase.vw_ai_POItemDetail
+GROUP BY
+  PONo
+HAVING
+  SUM(BasicAmount) > 50000;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:52:15] Query: List the Make Names that have an average basic amount per item greater than 1,000.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:52:19
+Query: List the Make Names that have an average basic amount per item greater than 1,000.
+Generated SQL:
+SELECT
+  MakeName
+FROM Purchase.vw_ai_POItemDetail
+GROUP BY
+  MakeName
+HAVING
+  AVG(BasicAmount) > 1000;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:56:14] Query: List the Make Names that have an average basic amount per item greater than 1,000.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentItemDetail, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:56:21
+Query: List the Make Names that have an average basic amount per item greater than 1,000.
+Generated SQL:
+SELECT
+  MakeName
+FROM Purchase.vw_ai_POItemDetail
+GROUP BY
+  MakeName
+HAVING
+  AVG(BasicAmount) > 1000;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 15:56:45] Query: Which Purchase Orders have a total basic amount greater than 50,000?
+Top 4 Initial: Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 15:56:48
+Query: Which Purchase Orders have a total basic amount greater than 50,000?
+Generated SQL:
+SELECT
+  PONo
+FROM Purchase.vw_ai_POItemDetail
+GROUP BY
+  PONo
+HAVING
+  SUM(BasicAmount) > 50000;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:05:09] Query: give me total indent, and out of those indent total po fullfilled, and out of those po total grn fullfiled
+Top 4 Initial: Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_GrnMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:05:24
+Query: give me total indent, and out of those indent total po fullfilled, and out of those po total grn fullfiled
+Generated SQL:
+WITH IndentToPO AS (
+    -- Step 1: Get all unique Indents and the POs linked to them
+    SELECT DISTINCT
+        piid.IndentNo,
+        piid.PONo
+    FROM
+        Purchase.vw_ai_POIndentItemDetail AS piid
+),
+POWithGRN AS (
+    -- Step 2: Identify POs that have had at least one GRN recorded against any of their items
+    SELECT DISTINCT
+        poid.PONo
+    FROM
+        Purchase.vw_ai_POItemDetail AS poid
+    WHERE
+        poid.GRNCount > 0
+)
+SELECT
+    COUNT(DISTINCT itp.IndentNo) AS TotalIndents,
+    COUNT(DISTINCT itp.PONo) AS TotalPOFulfilledFromIndents,
+    COUNT(DISTINCT pog.PONo) AS TotalGRNFulfilledFromPOFromIndents
+FROM
+    IndentToPO AS itp
+LEFT JOIN
+    POWithGRN AS pog ON itp.PONo = pog.PONo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:06:26] Query: i need total pending indent vs total po created for those indents vs total grn recieved for those indent and po
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:06:42
+Query: i need total pending indent vs total po created for those indents vs total grn recieved for those indent and po
+Generated SQL:
+WITH IndentToPO AS (
+    -- Step 1: Get all unique Indents that have at least one PO item linked to them,
+    -- and the corresponding POs. This represents indents that are 'in process'
+    -- of being fulfilled by POs.
+    SELECT DISTINCT
+        piid.IndentNo,
+        piid.PONo
+    FROM
+        Purchase.vw_ai_POIndentItemDetail AS piid
+),
+POWithGRN AS (
+    -- Step 2: Identify all unique POs that have had at least one GRN recorded against any of their items.
+    -- This CTE does not yet filter for POs originating from indents; that will happen in the final join.
+    SELECT DISTINCT
+        poid.PONo
+    FROM
+        Purchase.vw_ai_POItemDetail AS poid
+    WHERE
+        poid.GRNCount > 0
+)
+SELECT
+    COUNT(DISTINCT itp.IndentNo) AS TotalPendingIndents, -- Total unique indents that have POs linked
+    COUNT(DISTINCT itp.PONo) AS TotalPOCreatedForThoseIndents, -- Total unique POs created for those indents
+    COUNT(DISTINCT pog.PONo) AS TotalGRNReceivedForThoseIndentsAndPOs -- Total unique POs (that originated from indents) for which GRNs have been received
+FROM
+    IndentToPO AS itp
+LEFT JOIN
+    POWithGRN AS pog ON itp.PONo = pog.PONo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:09:35] Query: give me total pending indent
+Top 4 Initial: Inventory.vw_ai_IndentMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain
+Top 4 Final:   Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:09:39
+Query: give me total pending indent
+Generated SQL:
+SELECT
+  SUM(iid.RequiredQty - iid.POQty) AS TotalPendingIndent
+FROM Inventory.vw_ai_IndentItemDetail AS iid;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:11:17] Query: out of these indents how many have purchase order created
+Top 4 Initial: Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POIndentItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:11:21
+Query: out of these indents how many have purchase order created
+Generated SQL:
+SELECT
+  COUNT(DISTINCT im.IndentNo)
+FROM Inventory.vw_ai_IndentMain AS im
+JOIN Purchase.vw_ai_POIndentItemDetail AS piid
+  ON im.IndentNo = piid.IndentNo;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:14:13] Query: noob, pending documents mean authorized or in progress status indents
+Top 4 Initial: Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POItemDetail, Finance.vw_ai_PurchaseBillMain
+Top 4 Final:   Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:14:25
+Query: noob, pending documents mean authorized or in progress status indents
+Generated SQL:
+SELECT
+  COUNT(IndentNo)
+FROM Inventory.vw_ai_IndentMain
+WHERE
+  ReleasedBy IS NOT NULL;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:38:26] Query: tell me which indents are not authorized
+Top 4 Initial: Inventory.vw_ai_IndentMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail
+Top 4 Final:   Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentItemDetail, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:38:31
+Query: tell me which indents are not authorized
+Generated SQL:
+SELECT
+  IndentNo,
+  DocumentNoYearly,
+  DocumentDate,
+  DeptName,
+  CreatedByPrintingName AS CreatedBy
+FROM Inventory.vw_ai_IndentMain
+WHERE
+  AuthorizedBy IS NULL;
+Status: SUCCESS
+------------------------------------------------------------
+[2026-07-07 16:38:53] Query: give me the count.
+Top 4 Initial: Purchase.vw_ai_POItemDetail, Purchase.vw_ai_POIndentItemDetail, Purchase.vw_ai_POMain, Inventory.vw_ai_IndentMain
+Top 4 Final:   Purchase.vw_ai_POItemDetail, Inventory.vw_ai_IndentMain, Purchase.vw_ai_POMain, Purchase.vw_ai_POIndentItemDetail
+------------------------------------------------------------
+[FINAL SQL] Timestamp: 2026-07-07 16:38:56
+Query: give me the count.
+Generated SQL:
+SELECT
+  COUNT(IndentNo)
+FROM Inventory.vw_ai_IndentMain
+WHERE
+  AuthorizedBy IS NULL;
+Status: SUCCESS
+------------------------------------------------------------

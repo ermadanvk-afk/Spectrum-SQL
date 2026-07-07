@@ -167,12 +167,15 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
     
     if sql_match:
         sql_text = sql_match.group(1).strip()
-        explanation = content.replace(sql_match.group(0), "").strip()
-        # Clean up XML tags we enforce in system prompt
-        explanation = re.sub(r'</?explanation>', '', explanation).strip()
     else:
         # Fallback if the AI fails to use markdown blocks
         sql_text = content.replace('```', '').strip()
+        
+    # Robustly extract explanation
+    exp_match = re.search(r"<explanation>(.*?)</explanation>", content, re.DOTALL | re.IGNORECASE)
+    if exp_match:
+        explanation = exp_match.group(1).strip()
+    else:
         explanation = ""
         
     if return_response:

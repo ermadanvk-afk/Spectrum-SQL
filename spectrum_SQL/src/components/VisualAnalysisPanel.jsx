@@ -225,7 +225,7 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
       setStatus('loading');
       
       try {
-        if (!data || data.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
           throw new Error("No data returned from the database to visualize.");
         }
         
@@ -233,7 +233,11 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
         let summary = '';
         
         if (initialSpec) {
-          spec = JSON.parse(JSON.stringify(initialSpec.spec || initialSpec));
+          if (initialSpec.error) {
+            throw new Error(initialSpec.error);
+          }
+          spec = initialSpec.spec !== undefined ? initialSpec.spec : initialSpec;
+          if (spec) spec = JSON.parse(JSON.stringify(spec));
           summary = initialSpec.summary || '';
         } else {
           const response = await fetch('/api/analyze_v2', {
@@ -251,8 +255,9 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
           spec = result.vega_spec;
           summary = result.summary || '';
           
-          // Handle AI declining to generate a chart
-          if (!spec) {
+          // Handle AI declining to generate a chart, or if data is too small for a meaningful chart
+          const isSingleValue = data.length === 1 && Object.keys(data[0] || {}).length <= 2;
+          if (!spec || isSingleValue) {
             if (isMounted) {
               setSummaryText(summary);
               setStatus('success'); // Show summary only, no chart
@@ -270,8 +275,9 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
         setSummaryText(summary);
         
         // If spec is null (from cache) or invalid, show summary only
+        const isSingleValueCached = data.length === 1 && Object.keys(data[0] || {}).length <= 2;
         const isComposite = spec && (spec.layer || spec.vconcat || spec.hconcat || spec.concat || spec.facet);
-        if (!spec || (!spec.mark && !isComposite)) {
+        if (!spec || (!spec.mark && !isComposite) || isSingleValueCached) {
           if (isMounted) { setStatus('success'); setChartPages([]); }
           return;
         }
@@ -298,6 +304,10 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
         if (isMounted) {
           setStatus('error');
           setErrorMsg(err.message || "Failed to render chart.");
+        }
+        // Crucial fix: cache the error state so it doesn't retry on every refresh
+        if (onComplete && (!initialSpec || !initialSpec.error)) {
+          onComplete({ spec: null, summary: '', error: err.message || "Failed to render chart." });
         }
       }
     };

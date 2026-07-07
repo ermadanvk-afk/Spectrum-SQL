@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import io
 import pandas as pd
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
@@ -19,7 +20,12 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
     Generates pandas code for aggregation and a Vega-Lite spec,
     executes the pandas code, and summarizes the aggregated data.
     """
-    dtypes_str = str(df.dtypes)
+    if len(df) == 0 or (len(df) == 1 and len(df.columns) <= 2) or (len(df.columns) == 1 and len(df)>1):
+        return {"status": "success", "vega_spec": None, "summary": ""}
+
+    buffer = io.StringIO()
+    df.info(buf=buffer)
+    info_str = buffer.getvalue()
     # Give the AI statistical context so it can make smart scale/chart decisions
     describe_str = df.describe(include='all').to_string()
     prompt_path = os.path.join(os.path.dirname(__file__), "code_prompt_v2.txt")
@@ -27,8 +33,8 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
         code_system_prompt = f.read()
 
     code_user_prompt = (
-        f"DataFrame dtypes:\n{dtypes_str}\n\n"
-        f"DataFrame statistics (df.describe()):\n{describe_str}\n\n"
+        f"DataFrame info:\n{info_str}\n\n"
+        f"DataFrame describe:\n{describe_str}\n\n"
         f"User Query: {user_query}\n\n"
         "Generate the required JSON output."
     )
@@ -75,6 +81,26 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
             
             if chart_df is None:
                 raise ValueError("Variable 'chart_df' was not populated by the generated code.")
+            
+            # SAFEGUARD: Check for empty dataframe
+            if chart_df.empty:
+                return {
+                    "status": "error",
+                    "type": "exec_error",
+                    "content": "No visual available: The applied filters resulted in an empty dataset."
+                }
+            
+            # SAFEGUARD: Cap rows to prevent browser freeze
+            if len(chart_df) > 100:
+                chart_df = chart_df.head(100)
+                
+            # SAFEGUARD: Handle Date/Period objects for JSON serialization
+            for col in chart_df.columns:
+                if pd.api.types.is_datetime64_any_dtype(chart_df[col]) or pd.api.types.is_period_dtype(chart_df[col]):
+                    chart_df[col] = chart_df[col].astype(str)
+            
+            if isinstance(chart_df.index, (pd.DatetimeIndex, pd.PeriodIndex)):
+                chart_df.index = chart_df.index.astype(str)
             
             # Convert chart_df to list of dictionaries safely handling NaNs and Timestamps
             chart_data = json.loads(chart_df.to_json(orient="records", date_format="iso"))
