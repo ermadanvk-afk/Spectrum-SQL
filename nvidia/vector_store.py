@@ -4,7 +4,6 @@ import shutil
 from qdrant_client import QdrantClient
 # pyrefly: ignore [missing-import]
 from qdrant_client.models import Distance, VectorParams, PointStruct, SparseVectorParams, SparseIndexParams, SparseVector
-
 # Import from our local files
 from embedder import embed_m3
 from schema_chunker import (
