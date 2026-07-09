@@ -20,7 +20,7 @@ lemmatizer = WordNetLemmatizer()
 
 # Store the Qdrant DB locally in the project root directory
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_qdrant_db")
-
+log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "systemlog.txt"))
 _qdrant_client = None
 def get_qdrant_client():
     global _qdrant_client
@@ -83,8 +83,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
     )
     
     if chunk_type == "table":
-        fetch_k = 4
-        top_k = 4
+        fetch_k = 15
+        top_k = 15
     else:
         fetch_k = top_k
     
@@ -200,7 +200,7 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         # Log to systemlog.txt in the root directory
         import time
         import os
-        log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "systemlog.txt"))
+        
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Query: {query}\n")
             f.write(f"Top {fetch_k} Initial: {', '.join(merged_names)}\n")
@@ -224,7 +224,11 @@ def fetch_tables(query: str, top_k: int = 5):
     return results
 def fetch_business_rules(query: str, top_k: int = 5):
     """Fetches top k business rules based on similarity."""
-    return _fetch_chunks(query, chunk_type="business_rule", top_k=top_k)
+    rules_ =  _fetch_chunks(query, chunk_type="business_rule", top_k=top_k)
+    with open(log_path, "a", encoding="utf-8") as f:
+        for r in rules_:
+            f.write(str(r) + "\n")
+    return rules_
 
 def fetch_sample_queries(query: str, top_k: int = 5):
     """Fetches top k sample queries based on similarity."""

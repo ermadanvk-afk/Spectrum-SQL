@@ -56,6 +56,7 @@ STEP 5: Generate SQL.
 CRITICAL SYNTAX RULES:
 - You are writing T-SQL for SQL Server. You MUST NOT use `LIMIT` under any circumstances.
 - To restrict the number of rows, you MUST use `SELECT TOP N` (e.g., `SELECT TOP 10 ...`).
+- If No date range or period is provided assume one year period.
 
 # Output Rules
 CRITICAL: You MUST strictly follow this exact format. If you provide ANY conversational text outside of these tags, the system will crash.

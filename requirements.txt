@@ -13,3 +13,5 @@ sqlfluff
 torch
 transformers
 uvicorn
+sqlalchemy
+aiosqlite

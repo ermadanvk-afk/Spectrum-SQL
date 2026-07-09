@@ -6,7 +6,7 @@ import ChatInput from './components/ChatInput'
 function App() {
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false) // default closed to match requested view
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAnalysisEnabled, setIsAnalysisEnabled] = useState(false)
   const [isVisualAnalysisEnabled, setIsVisualAnalysisEnabled] = useState(false)
 
@@ -18,64 +18,21 @@ function App() {
   const abortControllerRef = useRef(null)
   const isSwitchingChatRef = useRef(false)
 
-  // Load history from local storage on mount
+  // Fetch all sessions on mount
   useEffect(() => {
-    const savedChats = localStorage.getItem('spectrum_chats')
-    if (savedChats) {
+    const fetchSessions = async () => {
       try {
-        let parsedChats = JSON.parse(savedChats);
-        // Clean up any broken loading states that might have been saved previously
-        parsedChats = parsedChats.map(chat => ({
-          ...chat,
-          messages: chat.messages.filter(m => m.type !== 'loading').map(m => ({ ...m, isHistorical: true }))
-        }));
-        setAllChats(parsedChats);
-      } catch (e) {
-        console.error("Failed to parse chat history", e)
+        const response = await fetch('/api/sessions')
+        if (response.ok) {
+          const data = await response.json()
+          setAllChats(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch sessions", error)
       }
     }
+    fetchSessions()
   }, [])
-
-  // Save to local storage whenever messages change
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    // Filter out loading messages so they don't get stuck forever on chat switch
-    const persistentMessages = messages.filter(m => m.type !== 'loading');
-
-    let chatId = currentChatId;
-
-    setAllChats(prevChats => {
-      const existingChatIndex = prevChats.findIndex(c => c.id === chatId);
-      let updatedChats = [...prevChats];
-
-      if (existingChatIndex >= 0) {
-        // Update existing chat
-        updatedChats[existingChatIndex] = {
-          ...updatedChats[existingChatIndex],
-          messages: persistentMessages
-        };
-      } else {
-        // Create new chat
-        chatId = Date.now().toString();
-        setCurrentChatId(chatId);
-
-        // Find the first user message for the title
-        const firstUserMsg = persistentMessages.find(m => m.role === 'user');
-        const title = firstUserMsg ? firstUserMsg.content : "New Chat";
-
-        updatedChats.unshift({
-          id: chatId,
-          title: title,
-          messages: persistentMessages,
-          date: new Date().toISOString()
-        });
-      }
-
-      localStorage.setItem('spectrum_chats', JSON.stringify(updatedChats));
-      return updatedChats;
-    });
-  }, [messages])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -85,29 +42,33 @@ function App() {
   }, [messages])
 
   const handleSend = async (query) => {
-    // Add user message
+    // Add user message to UI
     setMessages(prev => [...prev, { role: 'user', content: query }])
 
     // Add loading state
     setIsLoading(true)
     setMessages(prev => [...prev, { role: 'assistant', type: 'loading' }])
 
-    // Extract history of successful interactions
-    const successfulPairs = [];
-    let currentUserMsg = null;
-
-    // Parse current messages state before adding the new query
-    for (const msg of messages) {
-      if (msg.role === 'user') {
-        currentUserMsg = msg.content;
-      } else if (msg.role === 'assistant' && msg.type === 'success' && currentUserMsg) {
-        successfulPairs.push({ question: currentUserMsg, sql: msg.sql });
-        currentUserMsg = null;
+    let sessionId = currentChatId;
+    if (!sessionId) {
+      try {
+        const res = await fetch('/api/sessions', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          sessionId = data.id;
+          setCurrentChatId(sessionId);
+          // Update sidebar with new chat
+          setAllChats(prev => [{ id: sessionId, title: query, date: new Date().toISOString() }, ...prev]);
+        }
+      } catch (e) {
+        console.error("Failed to create session", e);
       }
+    } else {
+      // Update title of existing chat if it's "New Chat"
+      setAllChats(prev => prev.map(c => 
+        c.id === sessionId && c.title === "New Chat" ? { ...c, title: query } : c
+      ));
     }
-
-    // Sliding window: keep only the last 3 interactions
-    const history = successfulPairs.slice(-3);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -120,7 +81,7 @@ function App() {
         },
         body: JSON.stringify({
           query: query,
-          history: history
+          session_id: sessionId
         }),
         signal: controller.signal
       })
@@ -133,13 +94,21 @@ function App() {
         newMsgs.pop() // remove loading
 
         if (!response.ok) {
+          let errorContent = data.detail || "An error occurred while generating the response.";
+          const lowerError = errorContent.toLowerCase();
+          if (lowerError.includes('timeout') || lowerError.includes('hyt00')) {
+            errorContent = "The query took longer than the 45-second limit and was stopped. Please try a more specific question, or ask for a narrower time range.";
+          }
+
           newMsgs.push({
+            id: data.message_id, // backend should return this even on error if possible, though we might not update errors
             role: 'assistant',
             type: 'error',
-            content: data.detail || "An error occurred while generating the response."
+            content: errorContent
           })
         } else {
           newMsgs.push({
+            id: data.message_id,
             role: 'assistant',
             type: 'success',
             query: query,
@@ -190,7 +159,7 @@ function App() {
     }
   }
 
-  const handleAnalysisComplete = (index, analysisData) => {
+  const handleAnalysisComplete = async (index, analysisData, messageId) => {
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
@@ -198,9 +167,21 @@ function App() {
       }
       return newMsgs;
     });
+
+    if (messageId) {
+      try {
+        await fetch(`/api/messages/${messageId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysis: analysisData })
+        });
+      } catch (e) {
+        console.error("Failed to save analysis to backend", e);
+      }
+    }
   }
 
-  const handleVisualAnalysisComplete = (index, specData) => {
+  const handleVisualAnalysisComplete = async (index, specData, messageId) => {
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
@@ -208,6 +189,18 @@ function App() {
       }
       return newMsgs;
     });
+
+    if (messageId) {
+      try {
+        await fetch(`/api/messages/${messageId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visual_spec: specData })
+        });
+      } catch (e) {
+        console.error("Failed to save visual spec to backend", e);
+      }
+    }
   }
 
   const createNewChat = () => {
@@ -218,27 +211,39 @@ function App() {
     isSwitchingChatRef.current = false;
   }
 
-  const handleChatSelect = (chatId) => {
+  const handleChatSelect = async (chatId) => {
     isSwitchingChatRef.current = true;
     handleStop(); // Abort any ongoing request
-    const chat = allChats.find(c => c.id === chatId);
-    if (chat) {
-      setCurrentChatId(chatId);
-      setMessages(chat.messages);
+    setCurrentChatId(chatId);
+    setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
+    
+    try {
+      const response = await fetch(`/api/sessions/${chatId}/messages`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data);
+      } else {
+        setMessages([{ role: 'assistant', type: 'error', content: 'Failed to load chat history.' }]);
+      }
+    } catch (e) {
+      console.error("Failed to load messages", e);
+      setMessages([{ role: 'assistant', type: 'error', content: 'Failed to connect to server.' }]);
+    } finally {
+      isSwitchingChatRef.current = false;
     }
-    isSwitchingChatRef.current = false;
   }
 
-  const deleteChat = (id) => {
-    setAllChats(prev => {
-      const updated = prev.filter(c => c.id !== id);
-      localStorage.setItem('spectrum_chats', JSON.stringify(updated));
-      return updated;
-    });
+  const deleteChat = async (id) => {
+    setAllChats(prev => prev.filter(c => c.id !== id));
     if (currentChatId === id) {
       handleStop(true);
       setCurrentChatId(null);
       setMessages([]);
+    }
+    try {
+      await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error("Failed to delete chat on backend", e);
     }
   }
 
@@ -256,7 +261,7 @@ function App() {
               {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeft size={20} />}
             </button>
             <span className="sidebar-text" style={{ fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={18} style={{ color: '#d97757' }} /> Spectrum SQL
+              <Sparkles size={18} style={{ color: '#d97757' }} /> ERP Co-Pilot
             </span>
           </div>
         </div>
@@ -264,10 +269,10 @@ function App() {
         <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Auto-Analysis</span>
           <label className="switch">
-            <input 
-              type="checkbox" 
-              checked={isAnalysisEnabled} 
-              onChange={(e) => setIsAnalysisEnabled(e.target.checked)} 
+            <input
+              type="checkbox"
+              checked={isAnalysisEnabled}
+              onChange={(e) => setIsAnalysisEnabled(e.target.checked)}
             />
             <span className="slider round"></span>
           </label>
@@ -276,10 +281,10 @@ function App() {
         <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Visual Analysis</span>
           <label className="switch">
-            <input 
-              type="checkbox" 
-              checked={isVisualAnalysisEnabled} 
-              onChange={(e) => setIsVisualAnalysisEnabled(e.target.checked)} 
+            <input
+              type="checkbox"
+              checked={isVisualAnalysisEnabled}
+              onChange={(e) => setIsVisualAnalysisEnabled(e.target.checked)}
             />
             <span className="slider round"></span>
           </label>
@@ -345,11 +350,11 @@ function App() {
             </div>
           ) : (
             messages.map((msg, idx) => (
-              <MessageBubble 
-                key={idx} 
-                message={msg} 
-                onAnalysisComplete={(data) => handleAnalysisComplete(idx, data)}
-                onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec)}
+              <MessageBubble
+                key={idx}
+                message={msg}
+                onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
+                onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
               />
             ))
           )}

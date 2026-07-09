@@ -19,6 +19,12 @@ from analytics.analyzer import generate_analytical_summary
 from analytics.analyzer_v2 import generate_visual_summary
 
 from dotenv import load_dotenv
+from sqlalchemy.future import select
+from sqlalchemy import delete
+import json
+import uuid
+
+from database import init_db, get_db, Session, Message
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
@@ -26,7 +32,11 @@ conn_str = os.getenv("DB_CONNECTION_STRING")
 
 class QueryRequest(BaseModel):
     query: str
-    history: list[dict] = []
+    session_id: str = None
+
+class MessageUpdateRequest(BaseModel):
+    analysis: dict = None
+    visual_spec: dict = None
 
 class AnalyzeDataRequest(BaseModel):
     query: str
@@ -46,6 +56,8 @@ def get_nli_classifier():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("Initializing Database...")
+    await init_db()
     print("Warming up BGE-M3 model on startup...")
     get_m3_model()
     print("Warming up NLI model on startup...")
@@ -63,7 +75,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def run_pipeline(request_model: QueryRequest):
+async def run_pipeline(query: str, history: list):
     # Step 0: Intent Classification (NLI)
     classifier = get_nli_classifier()
     valid_intent = "A question about Enterprise ERP database data, procurement, purchase orders, items, or suppliers, analytical queries for procurement data, material management, inventory "
@@ -71,13 +83,13 @@ async def run_pipeline(request_model: QueryRequest):
     candidate_labels = [valid_intent, fallback_intent]
     
     # Run the classification
-    nli_result = classifier(request_model.query, candidate_labels)
+    nli_result = classifier(query, candidate_labels)
     top_intent = nli_result['labels'][0]
     
     valid_index = nli_result['labels'].index(valid_intent)
     valid_score = nli_result['scores'][valid_index]
     
-    print(f"\n[NLI INTENT] Query: '{request_model.query}'")
+    print(f"\n[NLI INTENT] Query: '{query}'")
     print(f"[NLI INTENT] Predicted Intent: {top_intent} (Scores: {nli_result['scores']})")
     
     if top_intent != valid_intent or valid_score < 0.5:
@@ -93,9 +105,9 @@ async def run_pipeline(request_model: QueryRequest):
 
     # Step 1: Generate SQL
     sql_raw, response_obj, chat, full_prompt, explanation = await generate_sql(
-        request_model.query, 
+        query, 
         return_response=True,
-        history=request_model.history
+        history=history
     )
     
     usage = response_obj.usage_metadata
@@ -105,7 +117,7 @@ async def run_pipeline(request_model: QueryRequest):
     # Step 2: Validate SQL
     is_valid, final_sql, retry_in, retry_out = await validate_and_fix_sql(
         sql_raw, 
-        request_model.query, 
+        query, 
         chat=chat
     )
     in_tok += retry_in
@@ -132,22 +144,110 @@ async def run_pipeline(request_model: QueryRequest):
         "cost": cost_info
     }
 
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
 @app.post("/api/ask")
-async def ask_question(request_model: QueryRequest, request: Request):
+async def ask_question(request_model: QueryRequest, request: Request, db: AsyncSession = Depends(get_db)):
     try:
+        session_id = request_model.session_id
+        if not session_id:
+            # Create a new session if none provided
+            session_id = str(uuid.uuid4())
+            new_session = Session(id=session_id, title="New Chat")
+            db.add(new_session)
+            await db.commit()
+        else:
+            # Fetch the session 
+            sess_result = await db.execute(select(Session).where(Session.id == session_id))
+            sess = sess_result.scalar_one_or_none()
+            if not sess:
+                new_session = Session(id=session_id, title="New Chat")
+                db.add(new_session)
+                await db.commit()
+                
+        from sqlalchemy.orm import defer
+        # Fetch history from DB without loading heavy JSON columns
+        result = await db.execute(
+            select(Message)
+            .where(Message.session_id == session_id)
+            .order_by(Message.id)
+            .options(
+                defer(Message.data),
+                defer(Message.cost),
+                defer(Message.analysis),
+                defer(Message.visual_spec)
+            )
+        )
+        messages = result.scalars().all()
+        
+        # If this is the first message in the session, update the session title
+        if not messages and session_id:
+            sess_result = await db.execute(select(Session).where(Session.id == session_id))
+            sess = sess_result.scalar_one_or_none()
+            if sess:
+                words = request_model.query.split()
+                sess.title = " ".join(words[:6]) + ("..." if len(words) > 6 else "")
+                await db.commit()
+        
+        successfulPairs = []
+        currentUserMsg = None
+        for msg in messages:
+            if msg.role == 'user':
+                currentUserMsg = msg.content
+            elif msg.role == 'assistant' and msg.type == 'success' and currentUserMsg:
+                successfulPairs.append({"question": currentUserMsg, "sql": msg.sql})
+                currentUserMsg = None
+                
+        history = successfulPairs[-3:] # Sliding window
+        
+        # Save user message to DB
+        user_msg = Message(session_id=session_id, role="user", content=request_model.query)
+        db.add(user_msg)
+        await db.commit()
+
         # Wrap the whole pipeline in an asyncio task
-        pipeline_task = asyncio.create_task(run_pipeline(request_model))
+        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history))
         
         # Poll for client disconnect
         while not pipeline_task.done():
             if await request.is_disconnected():
                 pipeline_task.cancel()
                 print("\n[NVIDIA PIPELINE] 🛑 Request aborted by client disconnect!")
-                # Just return an empty response, the client already hung up
                 return {}
             await asyncio.sleep(0.5)
             
-        return await pipeline_task
+        result_data = await pipeline_task
+        
+        from decimal import Decimal
+        from datetime import datetime, date
+        def json_serial(obj):
+            if isinstance(obj, Decimal):
+                return float(obj)
+            if isinstance(obj, (datetime, date)):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+
+        # Save assistant message to DB
+        asst_msg = Message(
+            session_id=session_id,
+            role="assistant",
+            type=result_data.get("status"),
+            query=request_model.query,
+            content=result_data.get("explanation") if result_data.get("status") == "error" else None,
+            sql=result_data.get("sql"),
+            original_sql=result_data.get("original_sql"),
+            explanation=result_data.get("explanation") if result_data.get("status") == "success" else None,
+            data=json.dumps(result_data.get("data"), default=json_serial) if result_data.get("data") is not None else None,
+            cost=json.dumps(result_data.get("cost"), default=json_serial) if result_data.get("cost") is not None else None
+        )
+        db.add(asst_msg)
+        await db.commit()
+        await db.refresh(asst_msg)
+        
+        result_data["message_id"] = asst_msg.id
+        result_data["session_id"] = session_id
+        return result_data
         
     except asyncio.CancelledError:
         print(f"\n[NVIDIA PIPELINE] 🛑 Request aborted by client!")
@@ -174,6 +274,48 @@ async def analyze_data_v2(request_model: AnalyzeDataRequest):
     df = pd.DataFrame(request_model.data)
     result = await generate_visual_summary(df, request_model.query)
     return result
+
+@app.get("/api/sessions")
+async def get_sessions(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Session).order_by(Session.created_at.desc()))
+    sessions = result.scalars().all()
+    return [{"id": s.id, "title": s.title, "date": s.created_at.isoformat()} for s in sessions]
+
+@app.post("/api/sessions")
+async def create_session(db: AsyncSession = Depends(get_db)):
+    session_id = str(uuid.uuid4())
+    new_session = Session(id=session_id, title="New Chat")
+    db.add(new_session)
+    await db.commit()
+    return {"id": session_id, "title": "New Chat"}
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str, db: AsyncSession = Depends(get_db)):
+    await db.execute(delete(Message).where(Message.session_id == session_id))
+    await db.execute(delete(Session).where(Session.id == session_id))
+    await db.commit()
+    return {"status": "success"}
+
+@app.get("/api/sessions/{session_id}/messages")
+async def get_session_messages(session_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Message).where(Message.session_id == session_id).order_by(Message.id))
+    messages = result.scalars().all()
+    return [msg.to_dict() for msg in messages]
+
+@app.put("/api/messages/{message_id}")
+async def update_message(message_id: int, request_model: MessageUpdateRequest, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Message).where(Message.id == message_id))
+    msg = result.scalar_one_or_none()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Message not found")
+        
+    if request_model.analysis is not None:
+        msg.analysis = json.dumps(request_model.analysis)
+    if request_model.visual_spec is not None:
+        msg.visual_spec = json.dumps(request_model.visual_spec)
+        
+    await db.commit()
+    return {"status": "success"}
 
 if __name__ == "__main__":
     import uvicorn

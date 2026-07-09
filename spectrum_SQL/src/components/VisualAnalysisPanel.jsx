@@ -324,8 +324,8 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
   const isMultiPage = totalPages > 1;
   const hasCharts = totalPages > 0;
 
-  // If status is success but we have no charts and no summary, don't render at all
-  if (status === 'success' && !hasCharts && !summaryText) return null;
+  // If there's an error or we have no charts and no summary, don't render the panel at all
+  if (status === 'error' || (status === 'success' && !hasCharts && !summaryText)) return null;
 
   return (
     <div style={isFullscreen ? {

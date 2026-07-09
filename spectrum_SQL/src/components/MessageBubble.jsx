@@ -68,6 +68,17 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
     );
   }
 
+  if (message.type === 'loading_history') {
+    return (
+      <div className="message assistant">
+        <div className="message-bubble glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Loader2 size={16} className="spin" color="var(--accent)" />
+          <span style={{ color: 'var(--text-main)', fontSize: '0.9rem' }}>Loading chat history...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (message.type === 'error') {
     return (
       <div className="message assistant">
@@ -113,7 +124,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                 <DataTable data={message.data} />
               )}
 
-              {message.visualAnalysisEnabled && message.data && message.data.length > 0 && (
+              {(message.visualAnalysisEnabled || message.visual_spec) && message.data && message.data.length > 0 && (
                 <VisualAnalysisPanel
                   query={message.query}
                   data={message.data}
@@ -141,7 +152,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
               )}
             </div>
 
-            {message.analysisEnabled && message.data && message.data.length > 0 && (
+            {(message.analysisEnabled || message.analysis) && message.data && message.data.length > 0 && (
               <div style={{ flex: 1, minWidth: '350px' }}>
                 <AnalysisPanel
                   query={message.query}
