@@ -17,7 +17,6 @@ def execute_query(sql: str, connection_string: str = None, connection=None, time
             conn_context = dummy_context(connection)
             
         with conn_context as conn:
-            # Enforce execution timeout on the underlying pyodbc connection
             try:
                 raw_conn = conn.connection.dbapi_connection
                 if hasattr(raw_conn, 'timeout'):

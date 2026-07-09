@@ -55,28 +55,6 @@ def embed_m3(texts):
         sparse_vecs.append(SparseVector(indices=indices, values=values))
         
     return dense_vecs, sparse_vecs
-
-# ==========================================
-# OLD FAST-EMBED LOGIC (COMMENTED OUT)
-# ==========================================
-# from fastembed import TextEmbedding, SparseTextEmbedding
-# from sentence_transformers import CrossEncoder
-
-# _DENSE_MODEL = None
-# _SPARSE_MODEL = None
-
-# def get_model(model_name="nomic-ai/nomic-embed-text-v1.5"):
-#     global _DENSE_MODEL
-#     if _DENSE_MODEL is None:
-#         _DENSE_MODEL = TextEmbedding(model_name=model_name, threads=2)
-#     return _DENSE_MODEL
-
-# def get_sparse_model(model_name="Qdrant/bm25"):
-#     global _SPARSE_MODEL
-#     if _SPARSE_MODEL is None:
-#         _SPARSE_MODEL = SparseTextEmbedding(model_name=model_name, threads=2)
-#     return _SPARSE_MODEL
-
 def get_nemotron_reranker_scores(query, documents):
     """
     Calls OpenRouter's rerank API using the NVIDIA Llama Nemotron model.
@@ -114,18 +92,6 @@ def get_nemotron_reranker_scores(query, documents):
         print(f"Error calling Nemotron reranker API: {e}")
         # Fallback to zeros if API fails
         return [0.0] * len(documents)
-
-# def embed_texts(texts, task_type="search_document"):
-#     model = get_model()
-#     if isinstance(texts, str): texts = [texts]
-#     prefixed_texts = [f"{task_type}: {text}" for text in texts]
-#     return np.array(list(model.embed(prefixed_texts, batch_size=8)))
-
-# def embed_texts_sparse(texts):
-#     model = get_sparse_model()
-#     if isinstance(texts, str): texts = [texts]
-#     return list(model.embed(texts, batch_size=8))
-
 if __name__ == "__main__":
     print("Testing embedder functions...")
     

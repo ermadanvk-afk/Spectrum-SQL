@@ -8,3 +8,6 @@ myenv/
 # python artifacts
 __pycache__/
 *.pyc
+qdrant_db
+systemlog.txt
+

@@ -5,7 +5,6 @@ numpy
 openai
 pandas
 pydantic
-pyodbc
 python-dotenv
 qdrant-client
 requests
