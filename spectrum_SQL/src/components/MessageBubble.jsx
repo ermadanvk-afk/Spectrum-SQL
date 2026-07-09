@@ -130,6 +130,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                   data={message.data}
                   isHistorical={message.isHistorical}
                   initialSpec={message.visual_spec}
+                  messageId={message.id}
                   onComplete={onVisualAnalysisComplete}
                 />
               )}
@@ -158,6 +159,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                   query={message.query}
                   data={message.data}
                   initialAnalysis={message.analysis}
+                  messageId={message.id}
                   onComplete={onAnalysisComplete}
                   isHistorical={message.isHistorical}
                 />

@@ -8315,3 +8315,30 @@ ORDER BY
     "Vendor Name";
 Status: SUCCESS
 ------------------------------------------------------------
+[2026-07-09 12:52:43] Query: give me the material requested in last 1 month
+Top 10 Initial: Inventory.vw_ai_MaterialReturnMain, Purchase.vw_ai_POMain, Finance.vw_ai_PurchaseBillMain, Purchase.vw_ai_POItemDetail, Inventory.vw_ai_GrnMain, Inventory.vw_ai_MaterialReturnItemDetail, Inventory.vw_ai_GRNItemDetail, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_GRNItemIndentDetail, Finance.vw_ai_PurchaseBillItemDetail
+Top 7 Final:   masterdata.vw_ai_ItemMaster, Inventory.vw_ai_MaterialReturnItemDetail, Inventory.vw_ai_MaterialReturnMain, Inventory.vw_ai_IndentItemDetail, Inventory.vw_ai_GRNItemIndentDetail, Inventory.vw_ai_GrnMain, Purchase.vw_ai_POItemDetail
+------------------------------------------------------------
+id='cdbbae66-47e6-54b1-a753-1f0340809c15' version=0 score=0.7 payload={'text': "ReceivedQty in vw_ai_GRNItemDetail represents the quantity physically received.\nAcceptedQty in vw_ai_GRNItemDetail represents the quantity accepted after inspection.\nRejectedQty in vw_ai_GRNItemDetail represents the quantity rejected during receipt.\nChallanQty in vw_ai_GRNItemDetail represents the supplier's dispatched quantity.", 'chunk_type': 'business_rule', 'original_id': 'rule_2'} vector=None shard_key=None order_value=None
+id='1d5483ec-c63a-57ef-ad66-ff96deec7f41' version=0 score=0.6428571428571428 payload={'text': 'Interpretation of StatusName in Purchase order\nAuthorized = PO approved, no receipt yet.\nIn Progress = Material partially received (one or more GRNs exist).\nCompleted = Entire ordered quantity has been received (considering configured tolerance).\nShort Close = User has closed the remaining quantity intentionally.\nCancelled = PO cancelled.\nHold = PO temporarily suspended.', 'chunk_type': 'business_rule', 'original_id': 'rule_0'} vector=None shard_key=None order_value=None
+id='9d233321-d4db-5cb0-b836-c653ddfcc777' version=0 score=0.5833333333333333 payload={'text': 'Never assume Ordered Quantity equals Received Quantity, or that Received Quantity equals Accepted Quantity. When a user asks "how much was received", strictly aggregate AcceptedQty from the GRN Item Detail, unless they specifically ask for the supplier\'s dispatched amount (ChallanQty).', 'chunk_type': 'business_rule', 'original_id': 'rule_4'} vector=None shard_key=None order_value=None
+id='43bb078a-accc-5e5a-90a3-b6c657e5c80b' version=0 score=0.5 payload={'text': 'Always use DocumentDate as the primary business date for any time-based reporting or filtering. Never use CreatedDate or AuthorizedDate to filter timeframes unless explicitly requested, as they only indicate system entry time.', 'chunk_type': 'business_rule', 'original_id': 'rule_7'} vector=None shard_key=None order_value=None
+id='c5cec901-2eda-5720-9134-78572070a5dd' version=0 score=0.45 payload={'text': 'Use NetAmount of vw_ai_POMain as the default document value whenever available.', 'chunk_type': 'business_rule', 'original_id': 'rule_3'} vector=None shard_key=None order_value=None
+id='5bf15019-0a64-5e79-ab56-b5c5e5d0a62d' version=0 score=0.30952380952380953 payload={'text': 'Interpretation of StatusName in Indent\n\nAuthorized = Indent approved but procurement has not started.\nIn Progress = RFQ, PO, or GRN exists against the indent.\nCompleted = Entire indent quantity has been covered through procurement.\nShort Close = Remaining requirement has been intentionally closed.\nCancelled = Indent cancelled.\nHold = Indent temporarily suspended.', 'chunk_type': 'business_rule', 'original_id': 'rule_1'} vector=None shard_key=None order_value=None
+id='a34621f1-b513-5154-92e4-bbf7e5c82942' version=0 score=0.125 payload={'text': 'Never expose internal database primary keys (like PONo, GRNNo, IssueNo, or ItemNo) to the user. Always use DocumentNoYearly as the recognizable identifier and alias it appropriately (e.g., "PO No.", "GRN No.", "Purchase Bill No."). Always display VendorName and ItemDescription instead of their codes.', 'chunk_type': 'business_rule', 'original_id': 'rule_6'} vector=None shard_key=None order_value=None
+id='4b078363-78ae-50bb-801f-1268dcd3a339' version=0 score=0.1111111111111111 payload={'text': 'Lead time refers to the difference between the indent creation documentdate and good reciept documentdate.', 'chunk_type': 'business_rule', 'original_id': 'rule_8'} vector=None shard_key=None order_value=None
+id='b72fe525-1738-5e66-8af9-c25ab3da24ee' version=0 score=0.1 payload={'text': 'Never invent relationships. Main views represent document headers and ItemDetail views represent document lines. Always use ItemDetail views for item-wise analysis (joining to the header for the date/vendor), and stick to Main views for document-level analysis.', 'chunk_type': 'business_rule', 'original_id': 'rule_5'} vector=None shard_key=None order_value=None
+[FINAL SQL] Timestamp: 2026-07-09 12:52:55
+Query: give me the material requested in last 1 month
+Generated SQL:
+SELECT
+  im.DocumentNoYearly AS "Indent No.",
+  iid.ItemDescription,
+  iid.RequiredQty
+FROM Inventory.vw_ai_IndentMain AS im
+JOIN Inventory.vw_ai_IndentItemDetail AS iid
+  ON im.IndentNo = iid.IndentNo
+WHERE
+  im.DocumentDate >= DATEADD(month, -1, GETDATE());
+Status: SUCCESS
+------------------------------------------------------------

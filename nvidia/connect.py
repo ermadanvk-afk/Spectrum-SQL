@@ -1,6 +1,7 @@
 import urllib.parse
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from logger import log_error_sync
 
 _engine = None
 
@@ -19,6 +20,7 @@ def get_engine(connection_string: str) -> Engine:
                 pool_recycle=3600    # Recreate connections every hour
             )
         except Exception as e:
+            log_error_sync("connect", "DB_CONNECTION_ERROR", e, "Failed to create database engine")
             raise RuntimeError(f"Failed to create database engine: {e}")
     return _engine
 
@@ -41,4 +43,5 @@ if __name__ == "__main__":
                 result = conn.execute(text("SELECT 1"))
                 print(f"[+] SUCCESS! Successfully connected to the database! Test query returned: {result.scalar()}")
         except Exception as e:
+            log_error_sync("connect_test", "TEST_CONNECTION_ERROR", e, "Failed test database connection")
             print(f"[X] FAILED to connect.\nError Details: {e}")

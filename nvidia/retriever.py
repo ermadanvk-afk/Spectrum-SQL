@@ -20,7 +20,6 @@ lemmatizer = WordNetLemmatizer()
 
 # Store the Qdrant DB locally in the project root directory
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_qdrant_db")
-log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "systemlog.txt"))
 _qdrant_client = None
 def get_qdrant_client():
     global _qdrant_client
@@ -47,14 +46,27 @@ def get_table_boosts(query: str) -> dict:
     lemmatized_words = [lemmatizer.lemmatize(w) for w in set(words)]
     
     matched_tables = {}
+    
+    # 1. Process "always pull" tables (wildcard '*')
+    for key, entry in boosting_data.items():
+        if key == "*":
+            tables = entry.get('tables', [])
+            score = entry.get('boost_score', 0)
+            for t in tables:
+                t_lower = t.lower().split('.')[-1]
+                matched_tables[t_lower] = max(matched_tables.get(t_lower, 0), score)
+
+    # 2. Process word-based matching
     for word in lemmatized_words:
         for key, entry in boosting_data.items():
+            if key == "*":
+                continue
             # Match if exact, or if the keyword is a substring of the query word (e.g. "expense" in "expensive")
             if key == word or (len(key) >= 4 and key in word):
                 tables = entry.get('tables', [])
                 score = entry.get('boost_score', 0)
                 for t in tables:
-                    # Normalize table name: lowercase and strip schema (e.g. "Purchase.vwaiQuotationMain" -> "vwaiquotationmain")
+                    # Normalize table name: lowercase and strip schema
                     t_lower = t.lower().split('.')[-1]
                     matched_tables[t_lower] = max(matched_tables.get(t_lower, 0), score)
                 
@@ -83,8 +95,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
     )
     
     if chunk_type == "table":
-        fetch_k = 15
-        top_k = 15
+        fetch_k = 10
+        top_k = 7
     else:
         fetch_k = top_k
     
@@ -197,23 +209,15 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         print(f"   -> {final_names_with_scores}")
         print(f"{'='*60}\n")
         
-        # Log to systemlog.txt in the root directory
-        import time
-        import os
-        
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Query: {query}\n")
-            f.write(f"Top {fetch_k} Initial: {', '.join(merged_names)}\n")
-            f.write(f"Top {top_k} Final:   {', '.join(final_tables_for_log)}\n")
-            f.write("-" * 60 + "\n")
+
             
-        return final_points
+        return final_points, merged_names, final_tables_for_log
     else:
         return [p for p in points[:top_k]]
 
 def fetch_tables(query: str, top_k: int = 5):
-    """Fetches top k tables based on similarity."""
-    results = _fetch_chunks(query, chunk_type="table", top_k=top_k)
+    """Fetches top k tables based on similarity, returning points, initial names, and final names."""
+    results, initial_names, final_names = _fetch_chunks(query, chunk_type="table", top_k=top_k)
     for res in results:
         if hasattr(res, 'payload') and 'text' in res.payload:
             # Extract table_name for evaluation if needed somewhere else
@@ -221,13 +225,10 @@ def fetch_tables(query: str, top_k: int = 5):
                 if line.strip().startswith("## Table:"):
                     res.payload['table_name'] = line.split("## Table:")[1].strip()
                     break
-    return results
+    return results, initial_names, final_names
 def fetch_business_rules(query: str, top_k: int = 5):
     """Fetches top k business rules based on similarity."""
     rules_ =  _fetch_chunks(query, chunk_type="business_rule", top_k=top_k)
-    with open(log_path, "a", encoding="utf-8") as f:
-        for r in rules_:
-            f.write(str(r) + "\n")
     return rules_
 
 def fetch_sample_queries(query: str, top_k: int = 5):
@@ -275,6 +276,8 @@ if __name__ == "__main__":
             break
         except Exception as e:
             import traceback
+            from logger import log_error_sync
+            log_error_sync("retriever", "UNEXPECTED_ERROR", e, "Error in manual retriever prompt")
             traceback.print_exc()
             print(f"An error occurred: {e}")
 # def _fetch_chunks_gemini(query: str, chunk_type: str, top_k: int = 5):

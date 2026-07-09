@@ -4,6 +4,7 @@ from FlagEmbedding import BGEM3FlagModel
 from qdrant_client.models import SparseVector
 import os
 import requests
+from logger import log_error_sync
 import json
 from dotenv import load_dotenv
 
@@ -109,6 +110,7 @@ def get_nemotron_reranker_scores(query, documents):
                 scores[item['index']] = item.get('relevance_score', 0.0)
         return scores
     except Exception as e:
+        log_error_sync("embedder", "NEMOTRON_API_ERROR", e, "Error calling Nemotron reranker API")
         print(f"Error calling Nemotron reranker API: {e}")
         # Fallback to zeros if API fails
         return [0.0] * len(documents)

@@ -1,7 +1,8 @@
 {
-  "Purchase": {
-  "tables": [
-  ],
-  "boost_score": 10
-}
+  "*": {
+    "tables": [
+      "vw_ai_ItemMaster"
+    ],
+    "boost_score": 10
+  }
 }

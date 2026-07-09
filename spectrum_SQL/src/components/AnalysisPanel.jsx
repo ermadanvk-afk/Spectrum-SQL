@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Loader2, Sparkles, TerminalSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical }) => {
+const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical, messageId }) => {
   const [status, setStatus] = useState(initialAnalysis ? 'done' : (isHistorical ? 'idle' : 'generating_code'));
   const [code, setCode] = useState(initialAnalysis?.code || '');
   const [summary, setSummary] = useState(initialAnalysis?.summary || '');
@@ -28,7 +28,7 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical 
         const response = await fetch('http://localhost:8000/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, data }),
+          body: JSON.stringify({ query, data, message_id: messageId }),
           signal: abortController.signal
         });
 

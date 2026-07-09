@@ -3,6 +3,7 @@ import os
 
 import sqlfluff
 from sql_gen import generate_sql
+from logger import update_log_sync, log_error_sync
 
 import re
 
@@ -10,7 +11,7 @@ def sanitize_sql(sql: str) -> str:
     sql = sql.replace("≥", ">=").replace("≤", "<=")
     return sql
 
-async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2) -> tuple[bool, str, int, int]:
+async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, message_id: int = None) -> tuple[bool, str, int, int]:
     retry_in_tokens = 0
     retry_out_tokens = 0
     
@@ -53,34 +54,29 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                     cursor.close()
                     raw_conn.close() # Returns the connection to the pool
                     
-            import time
-            log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
-            try:
-                with open(log_path, "a", encoding="utf-8") as f:
-                    f.write(f"[FINAL SQL] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-                    f.write(f"Query: {user_query}\n")
-                    f.write(f"Generated SQL:\n{current_sql}\n")
-                    f.write("Status: SUCCESS\n")
-                    f.write("-" * 60 + "\n")
-            except Exception as log_e:
-                print(f"Failed to log final SQL: {log_e}")
-                    
+            # Log SUCCESS
+            update_log_sync(
+                message_id=message_id,
+                module="validator",
+                level="INFO",
+                event_type="VALIDATION_SUCCESS",
+                message="SQL passed validation.",
+                generated_sql=current_sql,
+                validation_status="SUCCESS"
+            )
             return (True, current_sql, retry_in_tokens, retry_out_tokens)
         except Exception as e:
             if attempt < max_retries:
                 error_message = str(e)
                 retry_prompt = f"{user_query}\nThe following SQL has an error: {error_message}\nFix it and return only the corrected SQL."
                 
-                try:
-                    import time
-                    log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
-                    with open(log_path, "a", encoding="utf-8") as f:
-                        f.write(f"[RETRY {attempt+1}] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-                        f.write(f"Query: {user_query}\n")
-                        f.write(f"Error: {error_message}\n")
-                        f.write("-" * 60 + "\n")
-                except Exception as log_e:
-                    print(f"Failed to log retry: {log_e}")
+                log_error_sync(
+                    message_id=message_id,
+                    module="validator",
+                    event_type="VALIDATION_RETRY",
+                    error=e,
+                    message=f"SQL Validation Error on attempt {attempt+1}"
+                )
                     
 
                 if chat is not None:
@@ -103,16 +99,15 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             else:
                 pass
                 
-    import time
-    log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "systemlog.txt")
-    try:
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[FINAL SQL] Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            f.write(f"Query: {user_query}\n")
-            f.write(f"Generated SQL:\n{current_sql}\n")
-            f.write("Status: FAILED (Exceeded max retries)\n")
-            f.write("-" * 60 + "\n")
-    except Exception as log_e:
-        print(f"Failed to log final failed SQL: {log_e}")
+    # Log Failure
+    update_log_sync(
+        message_id=message_id,
+        module="validator",
+        level="ERROR",
+        event_type="VALIDATION_FAILED",
+        message="Sorry ! Please Reframe Your Question by giving more specific details",
+        generated_sql=current_sql,
+        validation_status="FAILED"
+    )
                 
     return (False, "UNABLE_TO_GENERATE: Sorry, unable to get the required results.", retry_in_tokens, retry_out_tokens)

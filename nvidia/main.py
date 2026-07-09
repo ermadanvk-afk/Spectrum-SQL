@@ -41,6 +41,7 @@ class MessageUpdateRequest(BaseModel):
 class AnalyzeDataRequest(BaseModel):
     query: str
     data: list[dict]
+    message_id: int = None
 
 nli_classifier = None
 
@@ -75,7 +76,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def run_pipeline(query: str, history: list):
+async def run_pipeline(query: str, history: list = None, message_id: int = None) -> dict:
     # Step 0: Intent Classification (NLI)
     classifier = get_nli_classifier()
     valid_intent = "A question about Enterprise ERP database data, procurement, purchase orders, items, or suppliers, analytical queries for procurement data, material management, inventory "
@@ -107,7 +108,8 @@ async def run_pipeline(query: str, history: list):
     sql_raw, response_obj, chat, full_prompt, explanation = await generate_sql(
         query, 
         return_response=True,
-        history=history
+        history=history,
+        message_id=message_id
     )
     
     usage = response_obj.usage_metadata
@@ -118,7 +120,8 @@ async def run_pipeline(query: str, history: list):
     is_valid, final_sql, retry_in, retry_out = await validate_and_fix_sql(
         sql_raw, 
         query, 
-        chat=chat
+        chat=chat,
+        message_id=message_id
     )
     in_tok += retry_in
     out_tok += retry_out
@@ -130,7 +133,7 @@ async def run_pipeline(query: str, history: list):
     if not conn_str or conn_str == "your_sql_server_connection_string":
         raise HTTPException(status_code=500, detail="Database connection string not configured.")
         
-    columns, rows = execute_query(final_sql, connection_string=conn_str)
+    columns, rows = execute_query(final_sql, connection_string=conn_str, message_id=message_id)
     
     # Calculate cost
     cost_info = calculate_cost(in_tok, out_tok)
@@ -146,6 +149,8 @@ async def run_pipeline(query: str, history: list):
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from logger import create_log_sync, update_log_sync, log_error_sync
 
 @app.post("/api/ask")
 async def ask_question(request_model: QueryRequest, request: Request, db: AsyncSession = Depends(get_db)):
@@ -205,9 +210,13 @@ async def ask_question(request_model: QueryRequest, request: Request, db: AsyncS
         user_msg = Message(session_id=session_id, role="user", content=request_model.query)
         db.add(user_msg)
         await db.commit()
+        await db.refresh(user_msg)
+        
+        # Initiate the single-row log trace for this query
+        create_log_sync(session_id, user_msg.id, request_model.query)
 
         # Wrap the whole pipeline in an asyncio task
-        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history))
+        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history, user_msg.id))
         
         # Poll for client disconnect
         while not pipeline_task.done():
@@ -263,7 +272,7 @@ async def analyze_data(request_model: AnalyzeDataRequest):
         return {"status": "error", "type": "error", "content": "No data provided for analysis."}
         
     df = pd.DataFrame(request_model.data)
-    result = await generate_analytical_summary(df, request_model.query)
+    result = await generate_analytical_summary(df, request_model.query, message_id=request_model.message_id)
     return result
 
 @app.post("/api/analyze_v2")
@@ -272,7 +281,7 @@ async def analyze_data_v2(request_model: AnalyzeDataRequest):
         return {"status": "error", "type": "error", "content": "No data provided for visual analysis."}
         
     df = pd.DataFrame(request_model.data)
-    result = await generate_visual_summary(df, request_model.query)
+    result = await generate_visual_summary(df, request_model.query, message_id=request_model.message_id)
     return result
 
 @app.get("/api/sessions")

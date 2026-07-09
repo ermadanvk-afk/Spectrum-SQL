@@ -1,8 +1,9 @@
 from connect import get_engine
 from sqlalchemy import text
 import contextlib
+from logger import log_error_sync, update_log_sync
 
-def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 45) -> tuple[list[str], list[dict]]:
+def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 45, message_id: int = None) -> tuple[list[str], list[dict]]:
     try:
         if connection is None:
             if not connection_string:
@@ -41,8 +42,25 @@ def execute_query(sql: str, connection_string: str = None, connection=None, time
                 else:
                     rows_as_list_of_dicts.append(dict(zip(column_names, row)))
             
+        update_log_sync(
+            message_id=message_id,
+            module="execute",
+            level="INFO",
+            event_type="EXECUTION_SUCCESS",
+            message="SQL executed successfully on target DB",
+            execution_status="SUCCESS"
+        )
         return (column_names, rows_as_list_of_dicts)
     except Exception as e:
+        update_log_sync(
+            message_id=message_id,
+            module="execute",
+            level="ERROR",
+            event_type="EXECUTION_FAILED",
+            message="SQL execution failed on target DB",
+            execution_status="FAILED"
+        )
+        log_error_sync("execute", "DB_EXECUTION_ERROR", e, "Error executing SQL on external DB", message_id=message_id, details={"sql": sql})
         raise RuntimeError(f"Database execution error: {e}\n\nFAILED SQL:\n{sql}")
 
 if __name__ == "__main__":
@@ -64,6 +82,7 @@ if __name__ == "__main__":
             if rows:
                 print("First row:", rows[0])
         except Exception as e:
+            log_error_sync("execute_test", "TEST_EXECUTION_ERROR", e, "Error during test execution")
             print(f"Error: {e}")
     else:
         print("DB_CONNECTION_STRING is not set properly in .env")

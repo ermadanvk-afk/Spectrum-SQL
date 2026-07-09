@@ -5,6 +5,7 @@ import io
 import pandas as pd
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from logger import log_error_sync
 
 env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
 load_dotenv(env_path)
@@ -15,7 +16,7 @@ client = AsyncOpenAI(
   timeout=120.0
 )
 
-async def generate_visual_summary(df: pd.DataFrame, user_query: str):
+async def generate_visual_summary(df: pd.DataFrame, user_query: str, message_id: int = None):
     """
     Generates pandas code for aggregation and a Vega-Lite spec,
     executes the pandas code, and summarizes the aggregated data.
@@ -68,6 +69,7 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
             pandas_code = parsed_json.get("pandas_code", "")
             vega_spec = parsed_json.get("vega_spec", {})
         except json.JSONDecodeError as e:
+            log_error_sync("analyzer_v2", "JSON_DECODE_ERROR", e, "Failed to parse AI output into JSON", details={"raw_string": json_str})
             print(f"\n[ANALYTICS V2] JSON Decode Error: {e}\nRaw String: {json_str}")
             return {"status": "error", "type": "json_error", "content": "Failed to parse AI output into JSON."}
 
@@ -106,6 +108,7 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
             chart_data = json.loads(chart_df.to_json(orient="records", date_format="iso"))
             
         except Exception as e:
+            log_error_sync("analyzer_v2", "PANDAS_EXEC_ERROR", e, "Pandas execution failed", details={"code": pandas_code})
             exec_error = str(e)
             chart_data = None
 
@@ -160,6 +163,7 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str):
         }
         
     except Exception as e:
+        log_error_sync("analyzer_v2", "UNEXPECTED_ERROR", e, "Unexpected error in run_visual_analysis_v2", message_id=message_id)
         return {
             "status": "error",
             "type": "error",

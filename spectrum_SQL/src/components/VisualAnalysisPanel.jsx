@@ -209,7 +209,7 @@ const SingleChart = ({ spec }) => {
 // ──────────────────────────────────────────────
 // Main Component
 // ──────────────────────────────────────────────
-const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplete }) => {
+const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplete, messageId }) => {
   const [status, setStatus] = useState('loading');
   const [errorMsg, setErrorMsg] = useState('');
   const [summaryText, setSummaryText] = useState('');
@@ -243,7 +243,7 @@ const VisualAnalysisPanel = ({ query, data, isHistorical, initialSpec, onComplet
           const response = await fetch('/api/analyze_v2', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query, data }),
+            body: JSON.stringify({ query, data, message_id: messageId }),
             signal: controller.signal
           });
           

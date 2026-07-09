@@ -4,6 +4,7 @@ import re
 import asyncio
 from dotenv import load_dotenv
 from retriever import fetch_tables, fetch_business_rules, fetch_sample_queries
+from logger import log_error_sync, update_log_sync
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
@@ -57,7 +58,7 @@ class OpenAIChatWrapper:
         
         return MockResponse(response_msg.content, in_t, out_t)
 
-async def generate_sql(user_query: str, return_response: bool = False, history: list = None) -> str:
+async def generate_sql(user_query: str, return_response: bool = False, history: list = None, message_id: int = None) -> str:
     """
     Takes a user query, retrieves relevant schema chunks, rules, and samples,
     and uses OpenRouter to construct the final SQL query.
@@ -65,9 +66,25 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
     if history is None:
         history = []
         
-    tables = fetch_tables(user_query, top_k=8)
+    tables, initial_names, final_names = fetch_tables(user_query, top_k=8)
     rules = fetch_business_rules(user_query, top_k=10)
     queries = fetch_sample_queries(user_query, top_k=3)
+    
+    # Log the RAG retrieval details using update_log_sync
+    rules_list = [r.payload.get('text', '') for r in rules]
+    queries_list = [{"sql": q.payload.get('sql', ''), "desc": q.payload.get('text', '')} for q in queries]
+    
+    update_log_sync(
+        message_id=message_id,
+        module="retriever",
+        level="INFO",
+        event_type="RAG_RETRIEVAL",
+        message="Retrieved context chunks",
+        tables_retrieved=initial_names,
+        tables_after_reranking=final_names,
+        business_rules=rules_list,
+        sample_queries=queries_list
+    )
     
     # 2. Format context using strict markdown headers to match instructions
     context_parts = []
@@ -147,6 +164,7 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         print("[NVIDIA PIPELINE] ✅ Received response from Laguna!")
     except Exception as e:
         print(f"[NVIDIA PIPELINE] ❌ Error from OpenRouter: {e}")
+        log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling OpenRouter LLM", message_id=message_id)
         raise e
     
     response_msg = response.choices[0].message
@@ -206,18 +224,16 @@ if __name__ == "__main__":
         try:
             sql, resp, chat, full_prompt = await generate_sql(query, return_response=True)
             print(sql)
-        
-            # Log to systemlog.txt
-            import time
-            with open("systemlog.txt", "a", encoding="utf-8") as f:
-                f.write("="*50 + "\n")
-                f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f"Prompt: {query}\n")
-                f.write(f"--- Context Passed to AI ---\n{full_prompt}\n----------------------------\n")
-                f.write(f"Raw SQL: {sql}\n")
-                f.write("Status: SUCCESS (Standalone Run)\n")
-                f.write("="*50 + "\n\n")
+            # Log via db instead of file
+            update_log_sync(
+                module="sql_gen_test",
+                level="INFO",
+                event_type="TEST_SUCCESS",
+                message="Test query generated successfully",
+                details={"query": query, "sql": sql}
+            )
         except Exception as e:
+            log_error_sync("sql_gen_test", "TEST_ERROR", e, "Error in test run")
             print(f"Error: {e}")
             
     asyncio.run(main())

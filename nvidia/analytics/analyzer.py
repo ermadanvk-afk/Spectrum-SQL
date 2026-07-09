@@ -1,4 +1,6 @@
 import os
+import io
+from logger import log_error_sync
 import re
 import json
 import pandas as pd
@@ -16,7 +18,7 @@ client = AsyncOpenAI(
 
 
 
-async def generate_analytical_summary(df: pd.DataFrame, user_query: str):
+async def generate_analytical_summary(df: pd.DataFrame, user_query: str, message_id: int = None):
     """
     Generates pandas code, executes it, and summarizes the output.
     Returns a dictionary with the results.
@@ -72,6 +74,7 @@ async def generate_analytical_summary(df: pd.DataFrame, user_query: str):
             exec(pandas_code, {}, local_scope)
             result_val = local_scope.get('result', "No result variable 'result' was populated by the generated code.")
         except Exception as e:
+            log_error_sync("analyzer", "PANDAS_EXEC_ERROR", e, "Pandas execution failed in analyzer", details={"code": pandas_code})
             exec_error = str(e)
             result_val = f"Execution Error: {exec_error}"
 
@@ -124,6 +127,7 @@ async def generate_analytical_summary(df: pd.DataFrame, user_query: str):
         }
         
     except Exception as e:
+        log_error_sync("analyzer", "UNEXPECTED_ERROR", e, "Unexpected error in run_analysis", message_id=message_id)
         return {
             "status": "error",
             "type": "error",
