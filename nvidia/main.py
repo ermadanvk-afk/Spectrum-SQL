@@ -328,4 +328,20 @@ async def update_message(message_id: int, request_model: MessageUpdateRequest, d
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    import json
+    import os
+
+    config_path = os.path.join(os.path.dirname(__file__), "server_config.json")
+    try:
+        with open(config_path, "r") as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        config = {"host": "0.0.0.0", "port": 8000, "reload": True, "workers": 1}
+
+    uvicorn.run(
+        "main:app",
+        host=config.get("host", "0.0.0.0"),
+        port=config.get("port", 8000),
+        reload=config.get("reload", True),
+        workers=config.get("workers", 1)
+    )

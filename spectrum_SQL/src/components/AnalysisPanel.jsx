@@ -25,7 +25,7 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
     const fetchAnalysis = async () => {
       try {
         if (status === 'idle') setStatus('generating_code');
-        const response = await fetch('http://localhost:8000/api/analyze', {
+        const response = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, data, message_id: messageId }),
