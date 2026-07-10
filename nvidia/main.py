@@ -343,5 +343,6 @@ if __name__ == "__main__":
         host=config.get("host", "0.0.0.0"),
         port=config.get("port", 8000),
         reload=config.get("reload", True),
-        workers=config.get("workers", 1)
+        workers=config.get("workers", 1),
+        app_dir=os.path.dirname(__file__) or "."
     )

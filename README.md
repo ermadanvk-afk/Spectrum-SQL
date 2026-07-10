@@ -1,4 +1,4 @@
-# ERP Co-Pilot: Linux Deployment Guide
+# ERP Co-Pilot: Linux Deployment Guide GR
 
 This guide walks you through deploying the ERP Co-Pilot (FastAPI Backend + React/Vite Frontend) onto a fresh Linux server (e.g., Ubuntu 22.04 LTS).
 
