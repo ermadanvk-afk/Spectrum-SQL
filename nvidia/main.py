@@ -287,7 +287,7 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze")
-async def analyze_data(request_model: AnalyzeDataRequest):
+async def analyze_data(request_model: AnalyzeDataRequest, current_user:User = Depends(get_current_user)):
     if not request_model.data:
         return {"status": "error", "type": "error", "content": "No data provided for analysis."}
         
@@ -296,7 +296,7 @@ async def analyze_data(request_model: AnalyzeDataRequest):
     return result
 
 @app.post("/api/analyze_v2")
-async def analyze_data_v2(request_model: AnalyzeDataRequest):
+async def analyze_data_v2(request_model: AnalyzeDataRequest, current_user:User = Depends(get_current_user)):
     if not request_model.data:
         return {"status": "error", "type": "error", "content": "No data provided for visual analysis."}
         
@@ -340,11 +340,15 @@ async def get_session_messages(session_id: str,current_user:User=Depends(get_cur
     return [msg.to_dict() for msg in messages]
 
 @app.put("/api/messages/{message_id}")
-async def update_message(message_id: int, request_model: MessageUpdateRequest, db: AsyncSession = Depends(get_db)):
+async def update_message(message_id: int, request_model: MessageUpdateRequest, current_user:User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Message).where(Message.id == message_id))
     msg = result.scalar_one_or_none()
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
+        
+    sess_result = await db.execute(select(Session).where(Session.id == msg.session_id, Session.user_id == current_user.id))
+    if not sess_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Not Authorized to update this message")
         
     if request_model.analysis is not None:
         msg.analysis = json.dumps(request_model.analysis)
