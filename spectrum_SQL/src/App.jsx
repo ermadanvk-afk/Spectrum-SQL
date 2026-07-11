@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2 } from 'lucide-react'
+import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut } from 'lucide-react'
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
+import Auth from './components/Auth'
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || null)
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -18,11 +20,50 @@ function App() {
   const abortControllerRef = useRef(null)
   const isSwitchingChatRef = useRef(false)
 
-  // Fetch all sessions on mount
+  // Clear session state and redirect to login
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    setToken(null)
+    setMessages([])
+    setAllChats([])
+    setCurrentChatId(null)
+  }
+
+  // Handle successful login
+  const handleLoginSuccess = (newToken) => {
+    localStorage.setItem('token', newToken)
+    setToken(newToken)
+  }
+
+  // Custom fetch wrapper that automatically appends the JWT bearer token to headers
+  const apiFetch = async (url, options = {}) => {
+    const headers = {
+      ...(options.headers || {}),
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers
+    })
+
+    // If unauthorized, log out immediately
+    if (response.status === 401) {
+      handleLogout()
+      throw new Error("Session expired. Please log in again.")
+    }
+
+    return response
+  }
+
+  // Fetch all sessions on mount or when token changes
   useEffect(() => {
+    if (!token) return
     const fetchSessions = async () => {
       try {
-        const response = await fetch('/api/sessions')
+        const response = await apiFetch('/api/sessions')
         if (response.ok) {
           const data = await response.json()
           setAllChats(data)
@@ -32,7 +73,7 @@ function App() {
       }
     }
     fetchSessions()
-  }, [])
+  }, [token])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -52,7 +93,7 @@ function App() {
     let sessionId = currentChatId;
     if (!sessionId) {
       try {
-        const res = await fetch('/api/sessions', { method: 'POST' });
+        const res = await apiFetch('/api/sessions', { method: 'POST' });
         if (res.ok) {
           const data = await res.json();
           sessionId = data.id;
@@ -74,7 +115,7 @@ function App() {
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch('/api/ask', {
+      const response = await apiFetch('/api/ask', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +142,7 @@ function App() {
           }
 
           newMsgs.push({
-            id: data.message_id, // backend should return this even on error if possible, though we might not update errors
+            id: data.message_id,
             role: 'assistant',
             type: 'error',
             content: errorContent
@@ -140,7 +181,7 @@ function App() {
           newMsgs.push({
             role: 'assistant',
             type: 'error',
-            content: "Failed to connect to the backend server. Is it running?"
+            content: error.message || "Failed to connect to the backend server. Is it running?"
           })
           return newMsgs
         })
@@ -170,7 +211,7 @@ function App() {
 
     if (messageId) {
       try {
-        await fetch(`/api/messages/${messageId}`, {
+        await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ analysis: analysisData })
@@ -192,7 +233,7 @@ function App() {
 
     if (messageId) {
       try {
-        await fetch(`/api/messages/${messageId}`, {
+        await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ visual_spec: specData })
@@ -218,7 +259,7 @@ function App() {
     setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
     
     try {
-      const response = await fetch(`/api/sessions/${chatId}/messages`);
+      const response = await apiFetch(`/api/sessions/${chatId}/messages`);
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
@@ -241,10 +282,15 @@ function App() {
       setMessages([]);
     }
     try {
-      await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/sessions/${id}`, { method: 'DELETE' });
     } catch (e) {
       console.error("Failed to delete chat on backend", e);
     }
+  }
+
+  // If not logged in, show the Auth screen
+  if (!token) {
+    return <Auth onLoginSuccess={handleLoginSuccess} />
   }
 
   return (
@@ -337,6 +383,21 @@ function App() {
               </button>
             </div>
           ))}
+        </div>
+
+        {/* Logout Button */}
+        <div
+          className="sidebar-item"
+          style={{
+            marginTop: 'auto',
+            borderTop: '1px solid var(--border-light)',
+            paddingTop: '16px',
+            color: '#ef4444'
+          }}
+          onClick={handleLogout}
+        >
+          <LogOut size={18} className="sidebar-icon" />
+          <span className="sidebar-text">Log out</span>
         </div>
       </aside>
 

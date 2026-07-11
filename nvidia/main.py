@@ -1,7 +1,7 @@
 import os
 import time
 import traceback
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request,Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -24,11 +24,30 @@ from sqlalchemy import delete
 import json
 import uuid
 
-from database import init_db, get_db, Session, Message
+from database import init_db, get_db, Session, Message,User
+from auth import get_password_hash, create_access_token, verify_password,decode_access_token
+from fastapi.security import OAuth2PasswordBearer
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
 conn_str = os.getenv("DB_CONNECTION_STRING")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+async def get_current_user(token: str = Depends(oauth2_scheme),db:AsyncSession=Depends(get_db)) -> User:
+    credentials_exception = HTTPException(status_code=401,detail="could not validate credentials",
+    headers ={"WWW-authenticate":"Bearer"},
+    )
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+    username: str = payload.get("sub")
+    if username is None:
+        raise credentials_exception
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise credentials_exception
+    return user
 
 class QueryRequest(BaseModel):
     query: str
@@ -43,6 +62,9 @@ class AnalyzeDataRequest(BaseModel):
     data: list[dict]
     message_id: int = None
 
+class UserCreate(BaseModel):
+    username : str
+    password : str
 nli_classifier = None
 
 def get_nli_classifier():
@@ -153,23 +175,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from logger import create_log_sync, update_log_sync, log_error_sync
 
 @app.post("/api/ask")
-async def ask_question(request_model: QueryRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def ask_question(request_model: QueryRequest, request: Request,current_user:User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     try:
         session_id = request_model.session_id
         if not session_id:
             # Create a new session if none provided
             session_id = str(uuid.uuid4())
-            new_session = Session(id=session_id, title="New Chat")
+            new_session = Session(id=session_id,user_id = current_user.id, title="New Chat")
             db.add(new_session)
             await db.commit()
         else:
             # Fetch the session 
-            sess_result = await db.execute(select(Session).where(Session.id == session_id))
+            sess_result = await db.execute(select(Session).where(Session.id == session_id, Session.user_id==current_user.id))
             sess = sess_result.scalar_one_or_none()
             if not sess:
-                new_session = Session(id=session_id, title="New Chat")
-                db.add(new_session)
-                await db.commit()
+                raise HTTPException(status_code=403, detail="Not Authorized to access this session")
                 
         from sqlalchemy.orm import defer
         # Fetch history from DB without loading heavy JSON columns
@@ -285,28 +305,36 @@ async def analyze_data_v2(request_model: AnalyzeDataRequest):
     return result
 
 @app.get("/api/sessions")
-async def get_sessions(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Session).order_by(Session.created_at.desc()))
+async def get_sessions(current_user:User = Depends(get_current_user),db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Session).where(Session.user_id==current_user.id).order_by(Session.created_at.desc()))
     sessions = result.scalars().all()
     return [{"id": s.id, "title": s.title, "date": s.created_at.isoformat()} for s in sessions]
 
 @app.post("/api/sessions")
-async def create_session(db: AsyncSession = Depends(get_db)):
+async def create_session(current_user:User = Depends(get_current_user),db: AsyncSession = Depends(get_db)):
     session_id = str(uuid.uuid4())
-    new_session = Session(id=session_id, title="New Chat")
+    new_session = Session(id=session_id, user_id=current_user.id, title="New Chat")
     db.add(new_session)
     await db.commit()
     return {"id": session_id, "title": "New Chat"}
 
 @app.delete("/api/sessions/{session_id}")
-async def delete_session(session_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_session(session_id: str,current_user:User=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Session).where(Session.id == session_id, Session.user_id == current_user.id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=404,detail="session not found")
     await db.execute(delete(Message).where(Message.session_id == session_id))
     await db.execute(delete(Session).where(Session.id == session_id))
     await db.commit()
-    return {"status": "success"}
+    return {"status":"success"}
 
 @app.get("/api/sessions/{session_id}/messages")
-async def get_session_messages(session_id: str, db: AsyncSession = Depends(get_db)):
+async def get_session_messages(session_id: str,current_user:User=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Session).where(Session.id == session_id,Session.user_id == current_user.id))
+    sess = result.scalar_one_or_none()
+    if not sess:
+        raise HTTPException(status_code=404,detail="session not found") 
     result = await db.execute(select(Message).where(Message.session_id == session_id).order_by(Message.id))
     messages = result.scalars().all()
     return [msg.to_dict() for msg in messages]
@@ -326,6 +354,27 @@ async def update_message(message_id: int, request_model: MessageUpdateRequest, d
     await db.commit()
     return {"status": "success"}
 
+@app.post("/api/auth/register")
+async def register_user(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
+    result = await db.execute(select(User).where(User.username==user_data.username))
+    existing_user = result.scalar_one_or_none()
+    if existing_user:
+        raise HTTPException(status_code=400,detail="Username already registered")
+    hashed_pwd = get_password_hash(user_data.password)
+    new_user = User(username=user_data.username, hashed_password=hashed_pwd)
+    db.add(new_user)
+    await db.commit()
+    return {"status":"success","message":"User registered successfully"}
+
+@app.post("/api/auth/login")
+async def login_user(user_data:UserCreate, db:AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.username == user_data.username))
+    user = result.scalar_one_or_none()
+
+    if not user or not verify_password(user_data.password,user.hashed_password):
+        raise HTTPException(status_code = 401,detail="Incorrect username or password")
+    access_token = create_access_token(data={"sub":user.username})
+    return {"access_token":access_token,"token_type":"bearer"}
 if __name__ == "__main__":
     import uvicorn
     import json
