@@ -11,7 +11,7 @@ def sanitize_sql(sql: str) -> str:
     sql = sql.replace("≥", ">=").replace("≤", "<=")
     return sql
 
-async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, message_id: int = None) -> tuple[bool, str, int, int]:
+async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, message_id: int = None, allowed_access: list = None) -> tuple[bool, str, int, int]:
     retry_in_tokens = 0
     retry_out_tokens = 0
     
@@ -37,17 +37,36 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             # 1. Syntax check using SQLFluff
             parsed = sqlfluff.parse(current_sql, dialect="tsql")
             
-            # 1.5. Strict '*' Ban using sqlfluff AST
-            def has_star(d):
-                if isinstance(d, dict):
-                    if 'star' in d: return True
-                    return any(has_star(v) for v in d.values())
-                elif isinstance(d, list):
-                    return any(has_star(i) for i in d)
-                return False
-
-            if has_star(parsed):
+            # 1.5. SQLGlot RBAC and Star Ban
+            import sqlglot
+            from sqlglot.expressions import Star, Table, Column
+            
+            try:
+                ast = sqlglot.parse_one(current_sql, dialect="tsql")
+            except Exception as parse_err:
+                raise Exception(f"SQL parsing error: {parse_err}")
+                
+            if list(ast.find_all(Star)):
                 raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
+
+            if allowed_access is not None:
+                extracted_tables = {t.name.lower() for t in ast.find_all(Table)}
+                allowed_table_names = [a['table_name'].lower() for a in allowed_access]
+                
+                # Check tables
+                for t in extracted_tables:
+                    if t not in allowed_table_names:
+                        return (False, f"AUTH_ERROR: You are not authorized to access the table '{t}'.", retry_in_tokens, retry_out_tokens)
+                        
+                # Check columns
+                extracted_columns = {c.name.lower() for c in ast.find_all(Column)}
+                for t in extracted_tables:
+                    table_rules = next((a for a in allowed_access if a['table_name'].lower() == t), None)
+                    if table_rules:
+                        restricted_cols = [c.lower() for c in table_rules['restricted_columns']]
+                        for col in extracted_columns:
+                            if col in restricted_cols:
+                                return (False, f"AUTH_ERROR: You are not authorized to view the column '{col}'.", retry_in_tokens, retry_out_tokens)
 
             # 2. Database Dry-Run (Schema & Column validation)
             if conn_str and conn_str != "your_sql_server_connection_string":
