@@ -21,6 +21,7 @@ from analytics.analyzer_v2 import generate_visual_summary
 from dotenv import load_dotenv
 from sqlalchemy.future import select
 from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import uuid
 
