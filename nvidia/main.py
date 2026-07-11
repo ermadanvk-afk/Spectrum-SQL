@@ -98,7 +98,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def run_pipeline(query: str, history: list = None, message_id: int = None) -> dict:
+async def run_pipeline(query: str, history: list = None, message_id: int = None, allowed_access: list = None) -> dict:
     # Step 0: Intent Classification (NLI)
     classifier = get_nli_classifier()
     valid_intent = "A question about Enterprise ERP database data, procurement, purchase orders, items, or suppliers, analytical queries for procurement data, material management, inventory "
@@ -143,12 +143,22 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None)
         sql_raw, 
         query, 
         chat=chat,
-        message_id=message_id
+        message_id=message_id,
+        allowed_access=allowed_access
     )
     in_tok += retry_in
     out_tok += retry_out
     
     if not is_valid:
+        if final_sql.startswith("AUTH_ERROR:"):
+            return {
+                "status": "error",
+                "explanation": final_sql.replace("AUTH_ERROR: ", ""),
+                "sql": None,
+                "original_sql": sql_raw,
+                "data": [],
+                "cost": calculate_cost(in_tok, out_tok)
+            }
         raise HTTPException(status_code=400, detail="Query validation failed. Unable to safely generate SQL.")
         
     # Step 3: Execute SQL
@@ -235,8 +245,21 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         # Initiate the single-row log trace for this query
         create_log_sync(session_id, user_msg.id, request_model.query)
 
+        # Fetch RoleTableAccess for current_user
+        from database import RoleTableAccess
+        role_id = current_user.role_id
+        allowed_access = []
+        if role_id is not None:
+            access_result = await db.execute(select(RoleTableAccess).where(RoleTableAccess.role_id == role_id))
+            access_records = access_result.scalars().all()
+            for acc in access_records:
+                allowed_access.append({
+                    "table_name": acc.table_name.lower(),
+                    "restricted_columns": json.loads(acc.restricted_columns) if acc.restricted_columns else []
+                })
+
         # Wrap the whole pipeline in an asyncio task
-        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history, user_msg.id))
+        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history, user_msg.id, allowed_access))
         
         # Poll for client disconnect
         while not pipeline_task.done():
