@@ -37,6 +37,18 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             # 1. Syntax check using SQLFluff
             parsed = sqlfluff.parse(current_sql, dialect="tsql")
             
+            # 1.5. Strict '*' Ban using sqlfluff AST
+            def has_star(d):
+                if isinstance(d, dict):
+                    if 'star' in d: return True
+                    return any(has_star(v) for v in d.values())
+                elif isinstance(d, list):
+                    return any(has_star(i) for i in d)
+                return False
+
+            if has_star(parsed):
+                raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
+
             # 2. Database Dry-Run (Schema & Column validation)
             if conn_str and conn_str != "your_sql_server_connection_string":
                 engine = get_engine(conn_str)

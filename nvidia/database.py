@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker,relationship
 
 DATABASE_URL = "sqlite+aiosqlite:///./spectrum.db"
 
@@ -70,3 +70,22 @@ class User(Base): # user model added
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String,unique=True,index=True,nullable=False)
     hashed_password = Column(String,nullable=False)
+    role_id = Column(Integer,ForeignKey("roles.id"),nullable=True)
+    role = relationship("Role",back_populates="users")
+
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(Integer,primary_key=True, index=True,autoincrement=True)
+    name = Column(String,unique=True,index=True,nullable = False)
+    users = relationship("User",back_populates="role")
+    table_permissions = relationship("RoleTableAccess",back_populates="role",cascade="all, delete")
+
+class RoleTableAccess(Base):
+    __tablename__ = "role_table_access"
+    id = Column(Integer,primary_key=True,index=True,autoincrement=True)
+    role_id = Column(Integer,ForeignKey("roles.id"),nullable=False)
+    table_name = Column(String,nullable=False)
+    restricted_columns = Column(Text,nullable=True)
+    role = relationship("Role",back_populates="table_permissions")
+
+    
