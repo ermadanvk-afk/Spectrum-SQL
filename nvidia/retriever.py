@@ -10,12 +10,16 @@ import re
 import nltk
 from nltk.stem import WordNetLemmatizer
 
-# Ensure wordnet is downloaded
+# Ensure wordnet is downloaded into a local folder to avoid IIS permission issues
+nltk_data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nltk_data')
+os.makedirs(nltk_data_dir, exist_ok=True)
+if nltk_data_dir not in nltk.data.path:
+    nltk.data.path.append(nltk_data_dir)
+
 try:
     nltk.data.find('corpora/wordnet')
 except LookupError:
-    nltk.download('wordnet', quiet=True)
-
+    nltk.download('wordnet', download_dir=nltk_data_dir, quiet=True)
 lemmatizer = WordNetLemmatizer()
 
 # Store the Qdrant DB locally in the project root directory
@@ -129,11 +133,11 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         
     if chunk_type == "table":
         print(f"\n{'='*60}")
-        print(f"🔍 TRACING PIPELINE FOR QUERY: '{query}'")
+        print(f"TRACING PIPELINE FOR QUERY: '{query}'")
         print(f"{'='*60}")
         
         merged_names = [p.payload.get('text', '').split('\n')[0].replace('## Table:', '').strip() for p in points]
-        print(f"🟢 1. HYBRID FUSION [Dense+Sparse RRF] (Top {fetch_k}):")
+        print(f"1. HYBRID FUSION [Dense+Sparse RRF] (Top {fetch_k}):")
         print(f"   -> {merged_names}")
         
         # 2. Rerank the fetched points using Nemotron via OpenRouter
@@ -205,7 +209,7 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
             final_names_with_scores.append(f"{t_name} (Score: {score:.3f})")
             final_tables_for_log.append(t_name)
             
-        print(f"🔵 2. FINAL RERANKED OUTPUT (Top {top_k}):")
+        print(f"2. FINAL RERANKED OUTPUT (Top {top_k}):")
         print(f"   -> {final_names_with_scores}")
         print(f"{'='*60}\n")
         
@@ -280,57 +284,3 @@ if __name__ == "__main__":
             log_error_sync("retriever", "UNEXPECTED_ERROR", e, "Error in manual retriever prompt")
             traceback.print_exc()
             print(f"An error occurred: {e}")
-# def _fetch_chunks_gemini(query: str, chunk_type: str, top_k: int = 5):
-#     """Internal function to fetch chunks using Dense Search via Gemini."""
-#     client = QdrantClient(path=DB_PATH_GEMINI)
-    
-#     if not client.collection_exists("schema_chunks"):
-#         print("Error: Collection 'schema_chunks' does not exist in Gemini DB.")
-#         return []
-        
-#     dense_vecs = embed_gemini(query)
-#     vector_dense = dense_vecs[0]
-    
-#     chunk_filter = Filter(
-#         must=[
-#             FieldCondition(
-#                 key="chunk_type",
-#                 match=MatchValue(value=chunk_type)
-#             )
-#         ]
-#     )
-    
-#     search_response = client.query_points(
-#         collection_name="schema_chunks",
-#         query=vector_dense,
-#         query_filter=chunk_filter,
-#         limit=top_k,
-#         with_payload=True,
-#         with_vectors=False
-#     )
-    
-#     points = search_response.points
-#     if not points:
-#         return []
-        
-#     return [p for p in points[:top_k]]
-
-# def fetch_tables_gemini(query: str, top_k: int = 5):
-#     """Fetches top k tables based on similarity using Gemini."""
-#     results = _fetch_chunks_gemini(query, chunk_type="table", top_k=top_k)
-#     for res in results:
-#         if hasattr(res, 'payload') and 'text' in res.payload:
-#             for line in res.payload['text'].split('\n'):
-#                 if line.strip().startswith("## Table:"):
-#                     res.payload['table_name'] = line.split("## Table:")[1].strip()
-#                     break
-#     return results
-
-
-# def fetch_business_rules_gemini(query: str, top_k: int = 5):
-#     """Fetches top k business rules based on similarity using Gemini."""
-#     return _fetch_chunks_gemini(query, chunk_type="business_rule", top_k=top_k)
-
-# def fetch_sample_queries_gemini(query: str, top_k: int = 5):
-#     """Fetches top k sample queries based on similarity using Gemini."""
-#     return _fetch_chunks_gemini(query, chunk_type="sample_query", top_k=top_k)

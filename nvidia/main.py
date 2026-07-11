@@ -242,7 +242,7 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         while not pipeline_task.done():
             if await request.is_disconnected():
                 pipeline_task.cancel()
-                print("\n[NVIDIA PIPELINE] 🛑 Request aborted by client disconnect!")
+                print("\n[NVIDIA PIPELINE] Request aborted by client disconnect!")
                 return {}
             await asyncio.sleep(0.5)
             
@@ -279,10 +279,10 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         return result_data
         
     except asyncio.CancelledError:
-        print(f"\n[NVIDIA PIPELINE] 🛑 Request aborted by client!")
+        print(f"\n[NVIDIA PIPELINE] Request aborted by client!")
         raise
     except Exception as e:
-        print(f"\n[NVIDIA PIPELINE] 💥 UNEXPECTED ERROR: {e}")
+        print(f"\n[NVIDIA PIPELINE] UNEXPECTED ERROR: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -389,13 +389,13 @@ if __name__ == "__main__":
         with open(config_path, "r") as f:
             config = json.load(f)
     except FileNotFoundError:
-        config = {"host": "0.0.0.0", "port": 8000, "reload": True, "workers": 1}
+        config = {"host": "0.0.0.0", "port": 8000, "reload": False, "workers": 1}
 
     uvicorn.run(
         "main:app",
         host=config.get("host", "0.0.0.0"),
         port=config.get("port", 8000),
-        reload=config.get("reload", True),
+        reload=False,
         workers=config.get("workers", 1),
         app_dir=os.path.dirname(__file__) or "."
     )
