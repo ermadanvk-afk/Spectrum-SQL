@@ -351,7 +351,7 @@ function App() {
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {allChats.map(chat => (
+          {isSidebarOpen && allChats.map(chat => (
             <div
               key={chat.id}
               className="sidebar-item"
@@ -366,7 +366,6 @@ function App() {
               title={chat.title}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-                <MessageSquare size={16} className="sidebar-icon" style={{ flexShrink: 0 }} />
                 <span className="sidebar-text" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {chat.title}
                 </span>
