@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import uuid
 
-from database import init_db, get_db, Session, Message,User
+from database import init_db, get_db, Session, Message, User, Role
 from auth import get_password_hash, create_access_token, verify_password,decode_access_token
 from fastapi.security import OAuth2PasswordBearer
 
@@ -66,6 +66,7 @@ class AnalyzeDataRequest(BaseModel):
 class UserCreate(BaseModel):
     username : str
     password : str
+    role : str = None
 nli_classifier = None
 
 def get_nli_classifier():
@@ -384,21 +385,40 @@ async def register_user(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(status_code=400,detail="Username already registered")
+        
+    role_id = None
+    if user_data.role:
+        role_result = await db.execute(select(Role).where(Role.name == user_data.role))
+        db_role = role_result.scalar_one_or_none()
+        if not db_role:
+            raise HTTPException(status_code=400, detail=f"Role '{user_data.role}' not found")
+        role_id = db_role.id
+
     hashed_pwd = get_password_hash(user_data.password)
-    new_user = User(username=user_data.username, hashed_password=hashed_pwd)
+    new_user = User(username=user_data.username, hashed_password=hashed_pwd, role_id=role_id)
     db.add(new_user)
     await db.commit()
     return {"status":"success","message":"User registered successfully"}
 
 @app.post("/api/auth/login")
 async def login_user(user_data:UserCreate, db:AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.username == user_data.username))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.role)).where(User.username == user_data.username))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(user_data.password,user.hashed_password):
         raise HTTPException(status_code = 401,detail="Incorrect username or password")
     access_token = create_access_token(data={"sub":user.username})
-    return {"access_token":access_token,"token_type":"bearer"}
+    role_name = user.role.name if user.role else None
+    return {"access_token":access_token,"token_type":"bearer","role":role_name}
+
+@app.get("/api/auth/me")
+async def get_current_user_info(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.role)).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    role_name = user.role.name if user and user.role else None
+    return {"username": current_user.username, "role": role_name}
 if __name__ == "__main__":
     import uvicorn
     import json

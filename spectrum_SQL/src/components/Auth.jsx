@@ -5,6 +5,7 @@ function Auth({ onLoginSuccess }) {
   const [isRegister, setIsRegister] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState('Purchase Manager')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -25,7 +26,7 @@ function Auth({ onLoginSuccess }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify(isRegister ? { username, password, role } : { username, password })
       })
 
       const data = await response.json()
@@ -41,7 +42,7 @@ function Auth({ onLoginSuccess }) {
         setShowPassword(false)
       } else {
         if (data.access_token) {
-          onLoginSuccess(data.access_token)
+          onLoginSuccess(data.access_token, data.role)
         } else {
           throw new Error('No access token returned by the server')
         }
@@ -201,6 +202,33 @@ function Auth({ onLoginSuccess }) {
               </button>
             </div>
           </div>
+
+          {isRegister && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.85rem', color: '#aaa', fontWeight: 500 }}>Role</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #333',
+                  backgroundColor: '#0d0d0d',
+                  color: '#fff',
+                  fontSize: '0.95rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
+                  appearance: 'none' /* Optional: hides default browser dropdown arrow on some OS */
+                }}
+              >
+                <option value="Purchase Manager">Purchase Manager</option>
+                <option value="Warehouse Manager">Warehouse Manager</option>
+                <option value="Purchase Executive">Purchase Executive</option>
+              </select>
+            </div>
+          )}
 
           <button
             type="submit"

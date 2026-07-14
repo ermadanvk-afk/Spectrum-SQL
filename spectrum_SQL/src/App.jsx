@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut } from 'lucide-react'
+import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut, Shield } from 'lucide-react'
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
 import Auth from './components/Auth'
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || null)
+  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || null)
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -23,16 +24,20 @@ function App() {
   // Clear session state and redirect to login
   const handleLogout = () => {
     localStorage.removeItem('token')
+    localStorage.removeItem('userRole')
     setToken(null)
+    setUserRole(null)
     setMessages([])
     setAllChats([])
     setCurrentChatId(null)
   }
 
   // Handle successful login
-  const handleLoginSuccess = (newToken) => {
+  const handleLoginSuccess = (newToken, role) => {
     localStorage.setItem('token', newToken)
+    if (role) localStorage.setItem('userRole', role)
     setToken(newToken)
+    setUserRole(role || null)
   }
 
   // Custom fetch wrapper that automatically appends the JWT bearer token to headers
@@ -73,6 +78,27 @@ function App() {
       }
     }
     fetchSessions()
+  }, [token])
+
+  // Fetch user role on page reload when token exists but role is not stored
+  useEffect(() => {
+    if (!token) return
+    if (userRole) return // already have it
+    const fetchUserInfo = async () => {
+      try {
+        const response = await apiFetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.role) {
+            setUserRole(data.role)
+            localStorage.setItem('userRole', data.role)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user info", error)
+      }
+    }
+    fetchUserInfo()
   }, [token])
 
   // Auto scroll to bottom
@@ -146,6 +172,14 @@ function App() {
             role: 'assistant',
             type: 'error',
             content: errorContent
+          })
+        } else if (data.status === 'error') {
+          // Backend returned 200 but pipeline reported an error (e.g. AUTH_ERROR)
+          newMsgs.push({
+            id: data.message_id,
+            role: 'assistant',
+            type: 'error',
+            content: data.explanation || "You do not have access to the requested data."
           })
         } else {
           newMsgs.push({
@@ -311,6 +345,35 @@ function App() {
             </span>
           </div>
         </div>
+
+        {/* Role Badge */}
+        {userRole && (
+          <div className="sidebar-item" style={{
+            marginTop: '8px',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            cursor: 'default'
+          }}>
+            <Shield size={16} style={{ color: '#d97757', flexShrink: 0 }} />
+            <span className="sidebar-text" style={{
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: '#d97757',
+              backgroundColor: 'rgba(217, 119, 87, 0.1)',
+              padding: '4px 12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(217, 119, 87, 0.25)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {userRole}
+            </span>
+          </div>
+        )}
+
 
         <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Auto-Analysis</span>
