@@ -24,6 +24,8 @@ class OpenAIChatWrapper:
     async def send_message(self, prompt):
         self.messages.append({"role": "user", "content": prompt})
         
+        print("\nRetrying payload(Validation fix)...")
+        
         response = await self.client.chat.completions.create(
             model="gemini-2.5-flash",
             messages=self.messages,
@@ -31,6 +33,8 @@ class OpenAIChatWrapper:
             # extra_body={"reasoning": {"enabled": True}},
             temperature=0.0
         )
+        
+        print("Received retry response!")
         
         response_msg = response.choices[0].message
         
@@ -67,7 +71,7 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         history = []
         
     tables, initial_names, final_names = fetch_tables(user_query, top_k=8)
-    rules = fetch_business_rules(user_query, top_k=10)
+    rules = fetch_business_rules(user_query, top_k=8)
     queries = fetch_sample_queries(user_query, top_k=3)
     
     # Log the RAG retrieval details using update_log_sync
@@ -129,7 +133,9 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
             
     context_str = "\n".join(context_parts)
     
-    system_instruction_path = "systemprompt.txt"
+    import os
+    current_dir = os.path.dirname(__file__)
+    system_instruction_path = os.path.join(current_dir, "systemprompt.txt")
     try:
         with open(system_instruction_path, "r", encoding="utf-8") as f:
             system_instruction = f.read()
@@ -150,8 +156,8 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         {"role": "user", "content": prompt}
     ]
     
-    print("\n[NVIDIA PIPELINE] 🚀 Sending payload to Laguna-XS via OpenRouter...")
-    print(f"[NVIDIA PIPELINE] ⏳ Waiting for response (this can take time for free tier)...")
+    print("\n[NVIDIA PIPELINE] Sending payload to Gemini Flash lite...")
+    print(f"[NVIDIA PIPELINE] Waiting for response...")
     
     try:
         response = await client.chat.completions.create(
@@ -161,9 +167,9 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         #   extra_body={"reasoning": {"enabled": True}},
           temperature=0.0
         )
-        print("[NVIDIA PIPELINE] ✅ Received response from Laguna!")
+        print("[NVIDIA PIPELINE] Received response from Laguna!")
     except Exception as e:
-        print(f"[NVIDIA PIPELINE] ❌ Error from OpenRouter: {e}")
+        print(f"[NVIDIA PIPELINE] Error from OpenRouter: {e}")
         log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling OpenRouter LLM", message_id=message_id)
         raise e
     

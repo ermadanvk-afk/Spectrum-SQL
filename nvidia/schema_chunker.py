@@ -8,7 +8,7 @@ def build_table_chunks(df: pd.DataFrame) -> list[dict]:
              schema_name, table_name, column_name, data_type,
              is_primary_key, is_foreign_key,
              referenced_schema, referenced_table, referenced_column,
-             description, keyword
+             Business Entity, purpose, supports, does not supports
 
     Output:
         list of chunk dicts, one per table:
@@ -26,29 +26,49 @@ def build_table_chunks(df: pd.DataFrame) -> list[dict]:
 
     for (schema, table), group in grouped:
 
-        full_name   = f"{schema}.{table}"
-        description = group["description"].iloc[0] if "description" in group.columns else ""
-        keywords    = group["keyword"].iloc[0] if "keyword" in group.columns else ""
+        full_name = f"{schema}.{table}"
+        
+        first_row = group.iloc[0]
+        business_entity = first_row.get("Business Entity", "")
+        purpose = first_row.get("purpose", "")
+        supports = first_row.get("supports", "")
+        does_not_support = first_row.get("does not supports", "")
 
-        # ── columns ──────────────────────────────────────────────
+        # ── columns and relationships ──────────────────────────────────────────────
         col_lines = []
+        rel_lines = []
         for _, row in group.iterrows():
             flags = []
             if row.get("is_primary_key") == 1:
                 flags.append("PK")
+            flag_str = f", {', '.join(flags)}" if flags else ""
+            col_lines.append(f"- {row['column_name']} ({row['data_type']}{flag_str})") # lets test without datatype next
+            
             if row.get("is_foreign_key") == 1:
                 ref = f"{row['referenced_schema']}.{row['referenced_table']}.{row['referenced_column']}"
-                flags.append(f"FK -> {ref}")
-            flag_str = f", {', '.join(flags)}" if flags else ""
-            col_lines.append(f"- {row['column_name']} ({row['data_type']}{flag_str})")
+                rel_lines.append(f"- {row['column_name']} -> {ref}")
 
         # ── assemble chunk content ────────────────────────────────
-        content_lines = [f"## Table: {full_name}"]
+        content_lines = [
+            f"table_name : {table}",
+            f"schema_name : {schema}",
+        ]
         
-        if pd.notna(description) and str(description).strip() and str(description).strip() != "nan":
-            content_lines.append(f"-- Description: {str(description).strip()}")
+        if pd.notna(business_entity) and str(business_entity).strip() and str(business_entity).strip() != "nan":
+            content_lines.append(f"Business Entity : {str(business_entity).strip()}")
+        if pd.notna(purpose) and str(purpose).strip() and str(purpose).strip() != "nan":
+            content_lines.append(f"purpose : {str(purpose).strip()}")
+        if pd.notna(supports) and str(supports).strip() and str(supports).strip() != "nan":
+            content_lines.append(f"supports : {str(supports).strip()}")
+        if pd.notna(does_not_support) and str(does_not_support).strip() and str(does_not_support).strip() != "nan":
+            content_lines.append(f"does not supports : {str(does_not_support).strip()}")
             
+        content_lines.append("columns :")
         content_lines.extend(col_lines)
+        
+        if rel_lines:
+            content_lines.append("relationships :")
+            content_lines.extend(rel_lines)
 
         content = "\n".join(content_lines)
 
@@ -153,7 +173,11 @@ if __name__ == "__main__":
         "referenced_table": [None, "vendor", None],
         "referenced_column": [None, "id", None],
         "description": ["Main purchase order records", "Main purchase order records", "Tax details"],
-        "keyword": ["purchase, vendor, order", "purchase, vendor, order", "tax, expense"]
+        "keyword": ["purchase, vendor, order", "purchase, vendor, order", "tax, expense"],
+        "Business Entity": ["Purchase Order", "Purchase Order", "Tax"],
+        "purpose": ["Store main PO info", "Store main PO info", "Store tax info"],
+        "supports": ["Reporting, Invoicing", "Reporting, Invoicing", "Accounting"],
+        "does not supports": ["Analytics", "Analytics", "Payroll"]
     }
     
     test_df = pd.DataFrame(data)

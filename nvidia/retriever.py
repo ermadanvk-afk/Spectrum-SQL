@@ -94,11 +94,11 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         ]
     )
     
-    if chunk_type == "table":
-        fetch_k = 15
-        top_k = 7
-    else:
-        fetch_k = top_k
+    # if chunk_type == "table":
+    #     # fetch_k = 15
+    #     # top_k = 7
+    # else:
+    fetch_k = top_k
     
     # 1. Fast Hybrid Retrieval (Dense + Sparse RRF)
     search_response = client.query_points(
@@ -132,7 +132,7 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         print(f"🔍 TRACING PIPELINE FOR QUERY: '{query}'")
         print(f"{'='*60}")
         
-        merged_names = [p.payload.get('text', '').split('\n')[0].replace('## Table:', '').strip() for p in points]
+        merged_names = [p.payload.get('text', '').split('\n')[0].replace('table_name :', '').strip() for p in points]
         print(f"🟢 1. HYBRID FUSION [Dense+Sparse RRF] (Top {fetch_k}):")
         print(f"   -> {merged_names}")
         
@@ -152,8 +152,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
             text = p.payload.get("text", "")
             table_name = None
             for line in text.split('\n'):
-                if line.strip().startswith("## Table:"):
-                    table_name = line.split("## Table:")[1].strip()
+                if line.strip().startswith("table_name :"):
+                    table_name = line.split("table_name :")[1].strip()
                     break
             
             if table_name:
@@ -176,8 +176,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
                 text = p.payload.get("text", "")
                 table_name = None
                 for line in text.split('\n'):
-                    if line.strip().startswith("## Table:"):
-                        table_name = line.split("## Table:")[1].strip()
+                    if line.strip().startswith("table_name :"):
+                        table_name = line.split("table_name :")[1].strip()
                         break
                 
                 if table_name:
@@ -199,8 +199,8 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
             text = p.payload.get("text", "")
             t_name = "Unknown"
             for line in text.split('\n'):
-                if line.strip().startswith("## Table:"):
-                    t_name = line.split("## Table:")[1].strip()
+                if line.strip().startswith("table_name :"):
+                    t_name = line.split("table_name :")[1].strip()
                     break
             final_names_with_scores.append(f"{t_name} (Score: {score:.3f})")
             final_tables_for_log.append(t_name)
@@ -222,9 +222,17 @@ def fetch_tables(query: str, top_k: int = 5):
         if hasattr(res, 'payload') and 'text' in res.payload:
             # Extract table_name for evaluation if needed somewhere else
             for line in res.payload['text'].split('\n'):
-                if line.strip().startswith("## Table:"):
-                    res.payload['table_name'] = line.split("## Table:")[1].strip()
+                if line.strip().startswith("table_name :"):
+                    res.payload['table_name'] = line.split("table_name :")[1].strip()
                     break
+            
+            # Filter out LLM-irrelevant context used for embeddings
+            filtered_lines = []
+            for line in res.payload['text'].split('\n'):
+                if not line.strip().startswith("supports :") and not line.strip().startswith("does not supports :"):
+                    filtered_lines.append(line)
+            res.payload['text'] = "\n".join(filtered_lines)
+            
     return results, initial_names, final_names
 def fetch_business_rules(query: str, top_k: int = 5):
     """Fetches top k business rules based on similarity."""
@@ -261,14 +269,12 @@ if __name__ == "__main__":
                 
             print(f"\nProcessing query: '{query}'...")
             
-            tables = fetch_tables(query, top_k=8)
-            print(tables)
+            tables, initial, final = fetch_tables(query, top_k=2)
             
-            rules = fetch_business_rules(query, top_k=10)
-            print(rules)
-            
-            queries = fetch_sample_queries(query, top_k=3)
-            print(queries)
+            print("\n--- EXACT CHUNKS SENT TO SQL_GEN.PY ---")
+            for t in tables:
+                print(t.payload.get('text', ''))
+                print("---------------------------------------")
             
         except KeyboardInterrupt:
             print("\nExiting...")

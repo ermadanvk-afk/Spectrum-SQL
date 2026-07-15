@@ -55,7 +55,7 @@ function LoadingSteps() {
   );
 }
 
-export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete }) {
+export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete, showCost, showSql }) {
   const isUser = message.role === 'user';
 
   if (message.type === 'loading') {
@@ -116,7 +116,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                 </div>
               )}
 
-              {message.sql && (
+              {message.sql && showSql && (
                 <SQLViewer sql={message.sql} originalSql={message.original_sql} />
               )}
 
@@ -135,7 +135,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                 />
               )}
 
-              {message.cost && (
+              {message.cost && showCost && (
                 <div className="cost-metrics">
                   <div className="metric-card">
                     <div className="metric-label">Input Tokens</div>

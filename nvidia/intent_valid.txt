@@ -1,0 +1,1 @@
+A request for Enterprise ERP database data, procurement analysis, OR a direct contextual follow-up or imperative command to modify the previous query (e.g., 'add amount', 'do this for last year', 'do that instead', 'sort it', 'group by month', 'show me X', 'change it to Y').

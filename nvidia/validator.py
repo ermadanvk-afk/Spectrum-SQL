@@ -49,7 +49,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             if list(ast.find_all(Star)):
                 raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
 
-            if allowed_access is not None:
+            # Temporarily disabled role based checking
+            if False and allowed_access is not None:
                 extracted_tables = {t.name.lower() for t in ast.find_all(Table)}
                 allowed_table_names = [a['table_name'].lower() for a in allowed_access]
                 

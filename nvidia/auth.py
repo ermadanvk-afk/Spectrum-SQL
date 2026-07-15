@@ -15,7 +15,8 @@ env_path = os.path.join(os.path.dirname(__file__),".env")
 load_dotenv(env_path)
 secret_key = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINS = 60
+ACCESS_TOKEN_EXPIRE_MINS = 180
+REFRESH_TOKEN_EXPIRE_MINS = 360
 
 def get_password_hash(password:str) -> str:
     pwd_bytes = password.encode('utf-8')
@@ -27,12 +28,20 @@ def verify_password(plan_password:str, hashed_password:str) -> bool:
         return bcrypt.checkpw(plan_password.encode('utf-8'), hashed_password.encode('utf-8'))
     except Exception:
         return False
-def create_access_token(data:dict) -> str:
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINS)
-    to_encode.update({"exp":
-    expire})
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINS)
+    to_encode.update({"exp": expire, "type": "access"})
+    encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
+    return encoded_jwt
 
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINS)
+    to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=ALGORITHM)
     return encoded_jwt
 def decode_access_token(token:str)->dict|None:

@@ -25,22 +25,36 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import uuid
 
-from database import init_db, get_db, Session, Message, User, Role
-from auth import get_password_hash, create_access_token, verify_password,decode_access_token
+from database import init_db, get_db, Session, Message, User, Role, RefreshToken
+from auth import get_password_hash, create_access_token, verify_password, decode_access_token, create_refresh_token, REFRESH_TOKEN_EXPIRE_MINS, ACCESS_TOKEN_EXPIRE_MINS
 from fastapi.security import OAuth2PasswordBearer
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
 conn_str = os.getenv("DB_CONNECTION_STRING")
+cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-async def get_current_user(token: str = Depends(oauth2_scheme),db:AsyncSession=Depends(get_db)) -> User:
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+async def get_current_user(request: Request, token: str = Depends(oauth2_scheme),db:AsyncSession=Depends(get_db)) -> User:
     credentials_exception = HTTPException(status_code=401,detail="could not validate credentials",
     headers ={"WWW-authenticate":"Bearer"},
     )
-    payload = decode_access_token(token)
+    
+    actual_token = request.cookies.get("access_token") or token
+    if not actual_token:
+        raise credentials_exception
+        
+    if actual_token.startswith("Bearer "):
+        actual_token = actual_token.split(" ")[1]
+        
+    payload = decode_access_token(actual_token)
     if payload is None:
         raise credentials_exception
+    
+    if payload.get("type") != "access":
+        raise credentials_exception
+        
     username: str = payload.get("sub")
     if username is None:
         raise credentials_exception
@@ -50,6 +64,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme),db:AsyncSession=D
         raise credentials_exception
     return user
 
+async def get_current_user_optional(request: Request, token: str = Depends(oauth2_scheme),db:AsyncSession=Depends(get_db)) -> User:
+    try:
+        return await get_current_user(request, token, db)
+    except HTTPException:
+        return None
+
 class QueryRequest(BaseModel):
     query: str
     session_id: str = None
@@ -57,6 +77,7 @@ class QueryRequest(BaseModel):
 class MessageUpdateRequest(BaseModel):
     analysis: dict = None
     visual_spec: dict = None
+    cost: dict = None
 
 class AnalyzeDataRequest(BaseModel):
     query: str
@@ -67,6 +88,9 @@ class UserCreate(BaseModel):
     username : str
     password : str
     role : str = None
+    display_token : bool = False
+    display_sql : bool = False
+    user_type : int = 2
 nli_classifier = None
 
 def get_nli_classifier():
@@ -94,7 +118,7 @@ app = FastAPI(title="Text to SQL API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -103,8 +127,21 @@ app.add_middleware(
 async def run_pipeline(query: str, history: list = None, message_id: int = None, allowed_access: list = None) -> dict:
     # Step 0: Intent Classification (NLI)
     classifier = get_nli_classifier()
-    valid_intent = "A question about Enterprise ERP database data, procurement, purchase orders, items, or suppliers, analytical queries for procurement data, material management, inventory "
-    fallback_intent = "A general conversational question, small talk, weather, stock market, or unrelated topic."
+    
+    import os
+    current_dir = os.path.dirname(__file__)
+    
+    try:
+        with open(os.path.join(current_dir, "intent_valid.txt"), "r", encoding="utf-8") as f:
+            valid_intent = f.read().strip()
+    except FileNotFoundError:
+            valid_intent = "A request for Enterprise ERP database data, procurement analysis, OR a direct contextual follow-up or imperative command to modify the previous query (e.g., 'add amount', 'do this for last year', 'do that instead', 'sort it', 'group by month', 'show me X', 'change it to Y')."
+        
+    try:
+        with open(os.path.join(current_dir, "intent_fallback.txt"), "r", encoding="utf-8") as f:
+            fallback_intent = f.read().strip()
+    except FileNotFoundError:
+            fallback_intent = "A general greeting, small talk, or a request completely unrelated to business data or the ongoing conversation (e.g., 'hello', 'weather', 'write a poem')."        
     candidate_labels = [valid_intent, fallback_intent]
     
     # Run the classification
@@ -267,7 +304,7 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         while not pipeline_task.done():
             if await request.is_disconnected():
                 pipeline_task.cancel()
-                print("\n[NVIDIA PIPELINE] 🛑 Request aborted by client disconnect!")
+                print("\n[NVIDIA PIPELINE] Request aborted by client disconnect!")
                 return {}
             await asyncio.sleep(0.5)
             
@@ -304,15 +341,15 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         return result_data
         
     except asyncio.CancelledError:
-        print(f"\n[NVIDIA PIPELINE] 🛑 Request aborted by client!")
+        print(f"\n[NVIDIA PIPELINE] Request aborted by client!")
         raise
     except Exception as e:
-        print(f"\n[NVIDIA PIPELINE] 💥 UNEXPECTED ERROR: {e}")
+        print(f"\n[NVIDIA PIPELINE] UNEXPECTED ERROR: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/analyze")
-async def analyze_data(request_model: AnalyzeDataRequest):
+async def analyze_data(request_model: AnalyzeDataRequest, current_user: User = Depends(get_current_user)):
     if not request_model.data:
         return {"status": "error", "type": "error", "content": "No data provided for analysis."}
         
@@ -321,7 +358,7 @@ async def analyze_data(request_model: AnalyzeDataRequest):
     return result
 
 @app.post("/api/analyze_v2")
-async def analyze_data_v2(request_model: AnalyzeDataRequest):
+async def analyze_data_v2(request_model: AnalyzeDataRequest, current_user: User = Depends(get_current_user)):
     if not request_model.data:
         return {"status": "error", "type": "error", "content": "No data provided for visual analysis."}
         
@@ -365,7 +402,7 @@ async def get_session_messages(session_id: str,current_user:User=Depends(get_cur
     return [msg.to_dict() for msg in messages]
 
 @app.put("/api/messages/{message_id}")
-async def update_message(message_id: int, request_model: MessageUpdateRequest, db: AsyncSession = Depends(get_db)):
+async def update_message(message_id: int, request_model: MessageUpdateRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Message).where(Message.id == message_id))
     msg = result.scalar_one_or_none()
     if not msg:
@@ -375,12 +412,28 @@ async def update_message(message_id: int, request_model: MessageUpdateRequest, d
         msg.analysis = json.dumps(request_model.analysis)
     if request_model.visual_spec is not None:
         msg.visual_spec = json.dumps(request_model.visual_spec)
+    if request_model.cost is not None:
+        if msg.cost:
+            current_cost = json.loads(msg.cost)
+            current_cost["input_tokens"] = current_cost.get("input_tokens", 0) + request_model.cost.get("input_tokens", 0)
+            current_cost["output_tokens"] = current_cost.get("output_tokens", 0) + request_model.cost.get("output_tokens", 0)
+            current_cost["cost_inr"] = current_cost.get("cost_inr", 0.0) + request_model.cost.get("cost_inr", 0.0)
+            msg.cost = json.dumps(current_cost)
+        else:
+            msg.cost = json.dumps(request_model.cost)
         
     await db.commit()
     return {"status": "success"}
 
 @app.post("/api/auth/register")
-async def register_user(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
+async def register_user(user_data:UserCreate, current_user: User = Depends(get_current_user_optional), db:AsyncSession=Depends(get_db)):
+    from sqlalchemy import func
+    total_users = await db.scalar(select(func.count()).select_from(User))
+    
+    if total_users > 0:
+        if not current_user or current_user.user_type != 1:
+            raise HTTPException(status_code=403, detail="Only Admins can register new users.")
+            
     result = await db.execute(select(User).where(User.username==user_data.username))
     existing_user = result.scalar_one_or_none()
     if existing_user:
@@ -395,22 +448,135 @@ async def register_user(user_data:UserCreate,db:AsyncSession=Depends(get_db)):
         role_id = db_role.id
 
     hashed_pwd = get_password_hash(user_data.password)
-    new_user = User(username=user_data.username, hashed_password=hashed_pwd, role_id=role_id)
+    new_user = User(
+        username=user_data.username, 
+        hashed_password=hashed_pwd, 
+        role_id=role_id,
+        display_token=user_data.display_token,
+        display_sql=user_data.display_sql,
+        user_type=user_data.user_type
+    )
     db.add(new_user)
     await db.commit()
     return {"status":"success","message":"User registered successfully"}
 
+from fastapi import Response
+
 @app.post("/api/auth/login")
-async def login_user(user_data:UserCreate, db:AsyncSession = Depends(get_db)):
+async def login_user(user_data:UserCreate, response: Response, db:AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
     result = await db.execute(select(User).options(selectinload(User.role)).where(User.username == user_data.username))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(user_data.password,user.hashed_password):
         raise HTTPException(status_code = 401,detail="Incorrect username or password")
+    
     access_token = create_access_token(data={"sub":user.username})
+    refresh_token = create_refresh_token(data={"sub":user.username})
+    
+    from datetime import datetime, timedelta, timezone
+    expire_date = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINS)
+    db_refresh_token = RefreshToken(user_id=user.id, token=refresh_token, expires_at=expire_date)
+    db.add(db_refresh_token)
+    await db.commit()
+    
     role_name = user.role.name if user.role else None
-    return {"access_token":access_token,"token_type":"bearer","role":role_name}
+    
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINS*60,
+        expires=ACCESS_TOKEN_EXPIRE_MINS*60,
+        samesite="lax",
+        secure=False,
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=REFRESH_TOKEN_EXPIRE_MINS*60,
+        expires=REFRESH_TOKEN_EXPIRE_MINS*60,
+        samesite="lax",
+        secure=False,
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user.username,
+        "role": role_name,
+        "display_token": user.display_token,
+        "display_sql": user.display_sql,
+        "user_type": user.user_type
+    }
+
+@app.post("/api/auth/refresh")
+async def refresh_access_token(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=401, detail="Refresh token missing")
+        
+    payload = decode_access_token(refresh_token)
+    if payload is None or payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+        
+    username: str = payload.get("sub")
+    if username is None:
+        raise HTTPException(status_code=401, detail="Invalid refresh token payload")
+        
+    result = await db.execute(select(RefreshToken).where(RefreshToken.token == refresh_token))
+    db_token = result.scalar_one_or_none()
+    
+    if not db_token or db_token.revoked:
+        raise HTTPException(status_code=401, detail="Refresh token revoked or invalid")
+        
+    new_access_token = create_access_token(data={"sub": username})
+    new_refresh_token = create_refresh_token(data={"sub": username})
+    from datetime import datetime, timedelta, timezone
+    expire_date = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINS)
+    
+    db_token.revoked = True
+    new_db_token = RefreshToken(user_id=db_token.user_id, token=new_refresh_token, expires_at=expire_date)
+    db.add(new_db_token)
+    await db.commit()
+    
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {new_access_token}",
+        httponly=True,
+        max_age=ACCESS_TOKEN_EXPIRE_MINS*60,
+        expires=ACCESS_TOKEN_EXPIRE_MINS*60,
+        samesite="lax",
+        secure=False,
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        max_age=REFRESH_TOKEN_EXPIRE_MINS*60,
+        expires=REFRESH_TOKEN_EXPIRE_MINS*60,
+        samesite="lax",
+        secure=False,
+    )
+    
+    return {"status": "success", "message": "Tokens refreshed"}
+
+@app.post("/api/auth/logout")
+async def logout_user(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        result = await db.execute(select(RefreshToken).where(RefreshToken.token == refresh_token))
+        db_token = result.scalar_one_or_none()
+        if db_token:
+            db_token.revoked = True
+            await db.commit()
+
+    response.delete_cookie("access_token", httponly=True, samesite="lax")
+    response.delete_cookie("refresh_token", httponly=True, samesite="lax")
+    return {"status": "success", "message": "Logged out successfully"}
 
 @app.get("/api/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -418,7 +584,13 @@ async def get_current_user_info(current_user: User = Depends(get_current_user), 
     result = await db.execute(select(User).options(selectinload(User.role)).where(User.id == current_user.id))
     user = result.scalar_one_or_none()
     role_name = user.role.name if user and user.role else None
-    return {"username": current_user.username, "role": role_name}
+    return {
+        "username": current_user.username, 
+        "role": role_name,
+        "display_token": user.display_token,
+        "display_sql": user.display_sql,
+        "user_type": user.user_type
+    }
 if __name__ == "__main__":
     import uvicorn
     import json

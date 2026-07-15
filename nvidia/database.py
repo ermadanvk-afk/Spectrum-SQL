@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, relationship
@@ -67,13 +67,18 @@ async def init_db():
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
 class User(Base): # user model added
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String,unique=True,index=True,nullable=False)
-    hashed_password = Column(String,nullable=False)
-    role_id = Column(Integer,ForeignKey("roles.id"),nullable=True)
-    role = relationship("Role",back_populates="users")
+    hashed_password = Column(String(255), nullable=False)
+    role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
+    display_token = Column(Boolean, default=False)
+    display_sql = Column(Boolean, default=False)
+    user_type = Column(Integer, default=2) # 1 = Admin, 2 = General User
+    
+    role = relationship("Role", back_populates="users")
 
 class Role(Base):
     __tablename__ = "roles"
@@ -90,4 +95,13 @@ class RoleTableAccess(Base):
     restricted_columns = Column(Text,nullable=True)
     role = relationship("Role",back_populates="table_permissions")
 
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    revoked = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
+    user = relationship("User")

@@ -1,17 +1,25 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut, Shield } from 'lucide-react'
+import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut, Shield, Settings, UserPlus, X } from 'lucide-react'
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
 import Auth from './components/Auth'
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || null)
-  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [userRole, setUserRole] = useState(null)
+  const [userName, setUserName] = useState(null)
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAnalysisEnabled, setIsAnalysisEnabled] = useState(false)
   const [isVisualAnalysisEnabled, setIsVisualAnalysisEnabled] = useState(false)
+  const [sessionExpiredModal, setSessionExpiredModal] = useState(false)
+  
+  const [userPermissions, setUserPermissions] = useState({ display_token: false, display_sql: false, user_type: 2 })
+  const [adminModalOpen, setAdminModalOpen] = useState(false)
+  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'Purchase Manager', display_token: false, display_sql: false, user_type: 2 })
+  const [adminStatus, setAdminStatus] = useState({ message: '', error: '' })
 
   // Chat History State
   const [allChats, setAllChats] = useState([])
@@ -21,51 +29,102 @@ function App() {
   const abortControllerRef = useRef(null)
   const isSwitchingChatRef = useRef(false)
 
-  // Clear session state and redirect to login
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userRole')
-    setToken(null)
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch (e) {
+      console.error('Logout failed', e)
+    }
+    setIsAuthenticated(false)
     setUserRole(null)
+    setUserName(null)
     setMessages([])
     setAllChats([])
     setCurrentChatId(null)
   }
 
-  // Handle successful login
-  const handleLoginSuccess = (newToken, role) => {
-    localStorage.setItem('token', newToken)
-    if (role) localStorage.setItem('userRole', role)
-    setToken(newToken)
+  const handleLoginSuccess = (tokenOrRole, possibleRole, perms, username) => {
+    const role = possibleRole || tokenOrRole // Handle old and new Auth.jsx signatures
+    setIsAuthenticated(true)
     setUserRole(role || null)
+    if (perms) {
+      setUserPermissions(perms)
+    }
+    if (username) {
+      setUserName(username)
+    }
   }
 
-  // Custom fetch wrapper that automatically appends the JWT bearer token to headers
   const apiFetch = async (url, options = {}) => {
-    const headers = {
-      ...(options.headers || {}),
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...options,
-      headers
+      credentials: 'include'
     })
 
-    // If unauthorized, log out immediately
-    if (response.status === 401) {
-      handleLogout()
-      throw new Error("Session expired. Please log in again.")
+    if (response.status === 401 && url !== '/api/auth/me' && url !== '/api/auth/login' && url !== '/api/auth/logout' && url !== '/api/auth/refresh') {
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include'
+        })
+        
+        if (refreshResponse.ok) {
+          response = await fetch(url, {
+            ...options,
+            credentials: 'include'
+          })
+          
+          if (response.ok) {
+            return response
+          }
+        }
+      } catch (e) {
+        console.error("Silent refresh failed", e)
+      }
+      
+      window.dispatchEvent(new Event('sessionExpired'))
+      throw new Error("SESSION_EXPIRED")
     }
 
     return response
   }
 
+  useEffect(() => {
+    const handleSessionExpired = () => setSessionExpiredModal(true)
+    window.addEventListener('sessionExpired', handleSessionExpired)
+    return () => window.removeEventListener('sessionExpired', handleSessionExpired)
+  }, [])
+
   // Fetch all sessions on mount or when token changes
   useEffect(() => {
-    if (!token) return
+    const checkAuth = async () => {
+      try {
+        const response = await apiFetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          setIsAuthenticated(true)
+          setUserRole(data.role || null)
+          setUserName(data.username || null)
+          setUserPermissions({
+            display_token: data.display_token,
+            display_sql: data.display_sql,
+            user_type: data.user_type
+          })
+        } else {
+          setIsAuthenticated(false)
+        }
+      } catch (error) {
+        console.error("Failed to fetch user info", error)
+        setIsAuthenticated(false)
+      } finally {
+        setIsCheckingAuth(false)
+      }
+    }
+    checkAuth()
+  }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
     const fetchSessions = async () => {
       try {
         const response = await apiFetch('/api/sessions')
@@ -78,28 +137,7 @@ function App() {
       }
     }
     fetchSessions()
-  }, [token])
-
-  // Fetch user role on page reload when token exists but role is not stored
-  useEffect(() => {
-    if (!token) return
-    if (userRole) return // already have it
-    const fetchUserInfo = async () => {
-      try {
-        const response = await apiFetch('/api/auth/me')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.role) {
-            setUserRole(data.role)
-            localStorage.setItem('userRole', data.role)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch user info", error)
-      }
-    }
-    fetchUserInfo()
-  }, [token])
+  }, [isAuthenticated])
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -209,16 +247,18 @@ function App() {
           })
         }
       } else {
-        setMessages(prev => {
-          const newMsgs = [...prev]
-          newMsgs.pop() // remove loading
-          newMsgs.push({
-            role: 'assistant',
-            type: 'error',
-            content: error.message || "Failed to connect to the backend server. Is it running?"
+        if (error.message !== "SESSION_EXPIRED") {
+          setMessages(prev => {
+            const newMsgs = [...prev]
+            newMsgs.pop() // remove loading
+            newMsgs.push({
+              role: 'assistant',
+              type: 'error',
+              content: error.message || "Failed to connect to the backend server. Is it running?"
+            })
+            return newMsgs
           })
-          return newMsgs
-        })
+        }
       }
     } finally {
       setIsLoading(false)
@@ -235,20 +275,33 @@ function App() {
   }
 
   const handleAnalysisComplete = async (index, analysisData, messageId) => {
+    let updatedCost = null;
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
-        newMsgs[index] = { ...newMsgs[index], analysis: analysisData };
+        const currentCost = newMsgs[index].cost;
+        if (currentCost && analysisData.cost) {
+          updatedCost = {
+            input_tokens: currentCost.input_tokens + analysisData.cost.input_tokens,
+            output_tokens: currentCost.output_tokens + analysisData.cost.output_tokens,
+            cost_inr: currentCost.cost_inr + analysisData.cost.cost_inr
+          };
+          newMsgs[index] = { ...newMsgs[index], analysis: analysisData, cost: updatedCost };
+        } else {
+          newMsgs[index] = { ...newMsgs[index], analysis: analysisData };
+        }
       }
       return newMsgs;
     });
 
     if (messageId) {
       try {
+        const body = { analysis: analysisData };
+        if (analysisData.cost) body.cost = analysisData.cost;
         await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ analysis: analysisData })
+          body: JSON.stringify(body)
         });
       } catch (e) {
         console.error("Failed to save analysis to backend", e);
@@ -257,20 +310,33 @@ function App() {
   }
 
   const handleVisualAnalysisComplete = async (index, specData, messageId) => {
+    let updatedCost = null;
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
-        newMsgs[index] = { ...newMsgs[index], visual_spec: specData };
+        const currentCost = newMsgs[index].cost;
+        if (currentCost && specData.cost) {
+          updatedCost = {
+            input_tokens: currentCost.input_tokens + specData.cost.input_tokens,
+            output_tokens: currentCost.output_tokens + specData.cost.output_tokens,
+            cost_inr: currentCost.cost_inr + specData.cost.cost_inr
+          };
+          newMsgs[index] = { ...newMsgs[index], visual_spec: specData, cost: updatedCost };
+        } else {
+          newMsgs[index] = { ...newMsgs[index], visual_spec: specData };
+        }
       }
       return newMsgs;
     });
 
     if (messageId) {
       try {
+        const body = { visual_spec: specData };
+        if (specData.cost) body.cost = specData.cost;
         await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visual_spec: specData })
+          body: JSON.stringify(body)
         });
       } catch (e) {
         console.error("Failed to save visual spec to backend", e);
@@ -322,13 +388,163 @@ function App() {
     }
   }
 
+  if (isCheckingAuth) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#111', color: '#d97757' }}>
+        Loading...
+      </div>
+    )
+  }
+
   // If not logged in, show the Auth screen
-  if (!token) {
+  if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />
+  }
+  
+  const handleCreateUser = async (e) => {
+    e.preventDefault()
+    setAdminStatus({ message: '', error: '' })
+    try {
+      const response = await apiFetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser)
+      })
+      const data = await response.json()
+      if (response.ok) {
+        setAdminStatus({ message: 'User created successfully!', error: '' })
+        setNewUser({ username: '', password: '', role: 'Purchase Manager', display_token: false, display_sql: false, user_type: 2 })
+      } else {
+        setAdminStatus({ error: data.detail || 'Failed to create user.', message: '' })
+      }
+    } catch (error) {
+      setAdminStatus({ error: error.message || 'Error creating user.', message: '' })
+    }
   }
 
   return (
     <div className="claude-layout">
+      {sessionExpiredModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#1e1e1e',
+            padding: '32px',
+            borderRadius: '12px',
+            border: '1px solid #333',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            maxWidth: '400px',
+            textAlign: 'center'
+          }}>
+            <Shield size={48} style={{ color: '#d97757' }} />
+            <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>Session Expired</h2>
+            <p style={{ color: '#aaa', margin: 0, fontSize: '0.95rem' }}>Hey, your session is expired. Kindly login again.</p>
+            <button 
+              onClick={() => {
+                setSessionExpiredModal(false)
+                handleLogout()
+              }}
+              style={{
+                marginTop: '8px',
+                backgroundColor: '#d97757',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                width: '100%',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.opacity = 0.9}
+              onMouseOut={(e) => e.target.style.opacity = 1}
+            >
+              Login Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Settings Modal */}
+      {adminModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#1e1e1e',
+            padding: '32px',
+            borderRadius: '12px',
+            border: '1px solid #333',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            width: '100%',
+            maxWidth: '450px',
+            position: 'relative'
+          }}>
+            <button 
+              onClick={() => {
+                setAdminModalOpen(false)
+                setAdminStatus({ message: '', error: '' })
+              }}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
+            >
+              <X size={20} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <UserPlus size={28} style={{ color: '#d97757' }} />
+              <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>Create New User</h2>
+            </div>
+            
+            {adminStatus.error && <div style={{ padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#fca5a5', borderRadius: '6px', fontSize: '0.85rem' }}>{adminStatus.error}</div>}
+            {adminStatus.message && <div style={{ padding: '10px', backgroundColor: 'rgba(34,197,94,0.1)', color: '#86efac', borderRadius: '6px', fontSize: '0.85rem' }}>{adminStatus.message}</div>}
+
+            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <input type="text" placeholder="Username" required value={newUser.username} onChange={(e) => setNewUser({...newUser, username: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }} />
+              <input type="password" placeholder="Password" required value={newUser.password} onChange={(e) => setNewUser({...newUser, password: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }} />
+              <select value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}>
+                <option value="Purchase Manager">Purchase Manager</option>
+              </select>
+              <select value={newUser.user_type} onChange={(e) => setNewUser({...newUser, user_type: parseInt(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}>
+                <option value={2}>General User</option>
+                <option value={1}>Admin</option>
+              </select>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="checkbox" id="display_token" checked={newUser.display_token} onChange={(e) => setNewUser({...newUser, display_token: e.target.checked})} />
+                <label htmlFor="display_token" style={{ color: '#aaa', fontSize: '0.9rem' }}>Allow viewing Tokens & Cost</label>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="checkbox" id="display_sql" checked={newUser.display_sql} onChange={(e) => setNewUser({...newUser, display_sql: e.target.checked})} />
+                <label htmlFor="display_sql" style={{ color: '#aaa', fontSize: '0.9rem' }}>Allow viewing Generated SQL</label>
+              </div>
+              
+              <button type="submit" style={{ padding: '12px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '8px' }}>
+                Create User
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
@@ -352,25 +568,33 @@ function App() {
             marginTop: '8px',
             padding: '8px 16px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '6px',
             cursor: 'default'
           }}>
-            <Shield size={16} style={{ color: '#d97757', flexShrink: 0 }} />
-            <span className="sidebar-text" style={{
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: '#d97757',
-              backgroundColor: 'rgba(217, 119, 87, 0.1)',
-              padding: '4px 12px',
-              borderRadius: '12px',
-              border: '1px solid rgba(217, 119, 87, 0.25)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {userRole}
-            </span>
+            {userName && (
+              <span className="sidebar-text" style={{ fontSize: '0.9rem', color: '#eee', fontWeight: 600, paddingLeft: '4px' }}>
+                Hi, {userName}!
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={16} style={{ color: '#d97757', flexShrink: 0 }} />
+              <span className="sidebar-text" style={{
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: '#d97757',
+                backgroundColor: 'rgba(217, 119, 87, 0.1)',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                border: '1px solid rgba(217, 119, 87, 0.25)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {userRole}
+              </span>
+            </div>
           </div>
         )}
 
@@ -447,13 +671,29 @@ function App() {
           ))}
         </div>
 
+        {userPermissions.user_type === 1 && (
+          <div
+            className="sidebar-item"
+            style={{
+              marginTop: 'auto',
+              borderTop: '1px solid var(--border-light)',
+              paddingTop: '16px',
+              color: '#a3a3a3'
+            }}
+            onClick={() => setAdminModalOpen(true)}
+          >
+            <Settings size={18} className="sidebar-icon" />
+            <span className="sidebar-text">Admin Settings</span>
+          </div>
+        )}
+
         {/* Logout Button */}
         <div
           className="sidebar-item"
           style={{
-            marginTop: 'auto',
-            borderTop: '1px solid var(--border-light)',
-            paddingTop: '16px',
+            marginTop: userPermissions.user_type === 1 ? '8px' : 'auto',
+            borderTop: userPermissions.user_type === 1 ? 'none' : '1px solid var(--border-light)',
+            paddingTop: userPermissions.user_type === 1 ? '0px' : '16px',
             color: '#ef4444'
           }}
           onClick={handleLogout}
@@ -476,6 +716,8 @@ function App() {
               <MessageBubble
                 key={idx}
                 message={msg}
+                showCost={userPermissions.display_token}
+                showSql={userPermissions.display_sql}
                 onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
                 onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
               />

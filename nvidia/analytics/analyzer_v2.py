@@ -150,6 +150,16 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str, message_id:
         summary_usage = summary_response.usage.total_tokens if summary_response.usage else 0
         total_usage = code_usage + summary_usage
         
+        code_in = code_response.usage.prompt_tokens if code_response.usage else 0
+        code_out = code_response.usage.completion_tokens if code_response.usage else 0
+        sum_in = summary_response.usage.prompt_tokens if summary_response.usage else 0
+        sum_out = summary_response.usage.completion_tokens if summary_response.usage else 0
+        
+        import sys
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from expense import calculate_cost
+        cost_info = calculate_cost(code_in + sum_in, code_out + sum_out)
+        
         print(f"\n[ANALYTICS V2] Summary Generated (Tokens: {summary_usage} | Total: {total_usage}):\n{summary_text}\n")
         
         return {
@@ -159,7 +169,8 @@ async def generate_visual_summary(df: pd.DataFrame, user_query: str, message_id:
             "summary": summary_text,
             "data": chart_data,
             "vega_spec": vega_spec,
-            "tokenUsage": total_usage
+            "tokenUsage": total_usage,
+            "cost": cost_info
         }
         
     except Exception as e:

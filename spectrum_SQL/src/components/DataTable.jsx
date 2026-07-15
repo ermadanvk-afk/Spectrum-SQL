@@ -16,9 +16,14 @@ export default function DataTable({ data }) {
         <tbody>
           {data.map((row, rowIndex) => (
             <tr key={rowIndex}>
-              {headers.map((header) => (
-                <td key={header}>{row[header]}</td>
-              ))}
+              {headers.map((header) => {
+                let cellValue = row[header];
+                // If the value is a number, format it using the Indian numbering system
+                if (typeof cellValue === 'number') {
+                  cellValue = cellValue.toLocaleString('en-IN');
+                }
+                return <td key={header}>{cellValue}</td>;
+              })}
             </tr>
           ))}
         </tbody>
