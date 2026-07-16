@@ -10,11 +10,24 @@ import re
 import nltk
 from nltk.stem import WordNetLemmatizer
 
+# Set up local NLTK data directory inside the project root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NLTK_DATA_DIR = os.path.join(BASE_DIR, 'nltk_data')
+os.makedirs(NLTK_DATA_DIR, exist_ok=True)
+
+if NLTK_DATA_DIR not in nltk.data.path:
+    nltk.data.path.append(NLTK_DATA_DIR)
+
 # Ensure wordnet is downloaded
 try:
     nltk.data.find('corpora/wordnet')
 except LookupError:
-    nltk.download('wordnet', quiet=True)
+    nltk.download('wordnet', download_dir=NLTK_DATA_DIR, quiet=True)
+
+try:
+    nltk.data.find('corpora/omw-1.4')
+except LookupError:
+    nltk.download('omw-1.4', download_dir=NLTK_DATA_DIR, quiet=True)
 
 lemmatizer = WordNetLemmatizer()
 
@@ -129,11 +142,11 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
         
     if chunk_type == "table":
         print(f"\n{'='*60}")
-        print(f"🔍 TRACING PIPELINE FOR QUERY: '{query}'")
+        print(f"TRACING PIPELINE FOR QUERY: '{query}'")
         print(f"{'='*60}")
         
         merged_names = [p.payload.get('text', '').split('\n')[0].replace('table_name :', '').strip() for p in points]
-        print(f"🟢 1. HYBRID FUSION [Dense+Sparse RRF] (Top {fetch_k}):")
+        print(f"1. HYBRID FUSION [Dense+Sparse RRF] (Top {fetch_k}):")
         print(f"   -> {merged_names}")
         
         # 2. Rerank the fetched points using Nemotron via OpenRouter
@@ -205,7 +218,7 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
             final_names_with_scores.append(f"{t_name} (Score: {score:.3f})")
             final_tables_for_log.append(t_name)
             
-        print(f"🔵 2. FINAL RERANKED OUTPUT (Top {top_k}):")
+        print(f"2. FINAL RERANKED OUTPUT (Top {top_k}):")
         print(f"   -> {final_names_with_scores}")
         print(f"{'='*60}\n")
         

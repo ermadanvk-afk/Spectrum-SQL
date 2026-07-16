@@ -1,7 +1,7 @@
 import json
 import traceback
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -38,6 +38,10 @@ class SystemLog(Base):
     execution_status = Column(String, nullable=True)
     error_details = Column(Text, nullable=True)
 
+    # User Feedback
+    is_useful = Column(Boolean, nullable=True)
+    user_comment = Column(String(500), nullable=True)
+
 # Ensure the table is created immediately
 Base.metadata.create_all(bind=engine)
 
@@ -61,7 +65,7 @@ def create_log_sync(session_id: str, message_id: int, user_query: str):
     except Exception as e:
         print(f"Failed to create log in DB: {e}")
 
-def update_log_sync(message_id: int, **kwargs):
+def update_log_sync(message_id: int, new_message_id: int = None, **kwargs):
     """
     Synchronously update an existing log entry by message_id.
     """
@@ -75,6 +79,9 @@ def update_log_sync(message_id: int, **kwargs):
                 # If we couldn't find the original row (maybe testing manually), create one on the fly
                 log_entry = SystemLog(message_id=message_id)
                 db.add(log_entry)
+                
+            if new_message_id:
+                log_entry.message_id = new_message_id
                 
             # Automatically serialize any dicts/lists to JSON strings
             for key, value in kwargs.items():

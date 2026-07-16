@@ -3,7 +3,7 @@ import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOu
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
 import Auth from './components/Auth'
-
+import AdminSettingsModal from './components/AdminSettingsModal'
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
@@ -15,11 +15,9 @@ function App() {
   const [isAnalysisEnabled, setIsAnalysisEnabled] = useState(false)
   const [isVisualAnalysisEnabled, setIsVisualAnalysisEnabled] = useState(false)
   const [sessionExpiredModal, setSessionExpiredModal] = useState(false)
-  
+
   const [userPermissions, setUserPermissions] = useState({ display_token: false, display_sql: false, user_type: 2 })
   const [adminModalOpen, setAdminModalOpen] = useState(false)
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'Purchase Manager', display_token: false, display_sql: false, user_type: 2 })
-  const [adminStatus, setAdminStatus] = useState({ message: '', error: '' })
 
   // Chat History State
   const [allChats, setAllChats] = useState([])
@@ -67,13 +65,13 @@ function App() {
           method: 'POST',
           credentials: 'include'
         })
-        
+
         if (refreshResponse.ok) {
           response = await fetch(url, {
             ...options,
             credentials: 'include'
           })
-          
+
           if (response.ok) {
             return response
           }
@@ -81,7 +79,7 @@ function App() {
       } catch (e) {
         console.error("Silent refresh failed", e)
       }
-      
+
       window.dispatchEvent(new Event('sessionExpired'))
       throw new Error("SESSION_EXPIRED")
     }
@@ -170,7 +168,7 @@ function App() {
       }
     } else {
       // Update title of existing chat if it's "New Chat"
-      setAllChats(prev => prev.map(c => 
+      setAllChats(prev => prev.map(c =>
         c.id === sessionId && c.title === "New Chat" ? { ...c, title: query } : c
       ));
     }
@@ -274,6 +272,12 @@ function App() {
     }
   }
 
+  const handleUpdateMessage = (messageId, updates) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, ...updates } : msg
+    ));
+  };
+
   const handleAnalysisComplete = async (index, analysisData, messageId) => {
     let updatedCost = null;
     setMessages(prev => {
@@ -357,7 +361,7 @@ function App() {
     handleStop(); // Abort any ongoing request
     setCurrentChatId(chatId);
     setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
-    
+
     try {
       const response = await apiFetch(`/api/sessions/${chatId}/messages`);
       if (response.ok) {
@@ -400,27 +404,6 @@ function App() {
   if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />
   }
-  
-  const handleCreateUser = async (e) => {
-    e.preventDefault()
-    setAdminStatus({ message: '', error: '' })
-    try {
-      const response = await apiFetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser)
-      })
-      const data = await response.json()
-      if (response.ok) {
-        setAdminStatus({ message: 'User created successfully!', error: '' })
-        setNewUser({ username: '', password: '', role: 'Purchase Manager', display_token: false, display_sql: false, user_type: 2 })
-      } else {
-        setAdminStatus({ error: data.detail || 'Failed to create user.', message: '' })
-      }
-    } catch (error) {
-      setAdminStatus({ error: error.message || 'Error creating user.', message: '' })
-    }
-  }
 
   return (
     <div className="claude-layout">
@@ -450,7 +433,7 @@ function App() {
             <Shield size={48} style={{ color: '#d97757' }} />
             <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>Session Expired</h2>
             <p style={{ color: '#aaa', margin: 0, fontSize: '0.95rem' }}>Hey, your session is expired. Kindly login again.</p>
-            <button 
+            <button
               onClick={() => {
                 setSessionExpiredModal(false)
                 handleLogout()
@@ -478,71 +461,10 @@ function App() {
 
       {/* Admin Settings Modal */}
       {adminModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            backgroundColor: '#1e1e1e',
-            padding: '32px',
-            borderRadius: '12px',
-            border: '1px solid #333',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            width: '100%',
-            maxWidth: '450px',
-            position: 'relative'
-          }}>
-            <button 
-              onClick={() => {
-                setAdminModalOpen(false)
-                setAdminStatus({ message: '', error: '' })
-              }}
-              style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}
-            >
-              <X size={20} />
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <UserPlus size={28} style={{ color: '#d97757' }} />
-              <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>Create New User</h2>
-            </div>
-            
-            {adminStatus.error && <div style={{ padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#fca5a5', borderRadius: '6px', fontSize: '0.85rem' }}>{adminStatus.error}</div>}
-            {adminStatus.message && <div style={{ padding: '10px', backgroundColor: 'rgba(34,197,94,0.1)', color: '#86efac', borderRadius: '6px', fontSize: '0.85rem' }}>{adminStatus.message}</div>}
-
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <input type="text" placeholder="Username" required value={newUser.username} onChange={(e) => setNewUser({...newUser, username: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }} />
-              <input type="password" placeholder="Password" required value={newUser.password} onChange={(e) => setNewUser({...newUser, password: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }} />
-              <select value={newUser.role} onChange={(e) => setNewUser({...newUser, role: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}>
-                <option value="Purchase Manager">Purchase Manager</option>
-              </select>
-              <select value={newUser.user_type} onChange={(e) => setNewUser({...newUser, user_type: parseInt(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}>
-                <option value={2}>General User</option>
-                <option value={1}>Admin</option>
-              </select>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" id="display_token" checked={newUser.display_token} onChange={(e) => setNewUser({...newUser, display_token: e.target.checked})} />
-                <label htmlFor="display_token" style={{ color: '#aaa', fontSize: '0.9rem' }}>Allow viewing Tokens & Cost</label>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" id="display_sql" checked={newUser.display_sql} onChange={(e) => setNewUser({...newUser, display_sql: e.target.checked})} />
-                <label htmlFor="display_sql" style={{ color: '#aaa', fontSize: '0.9rem' }}>Allow viewing Generated SQL</label>
-              </div>
-              
-              <button type="submit" style={{ padding: '12px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '8px' }}>
-                Create User
-              </button>
-            </form>
-          </div>
-        </div>
+        <AdminSettingsModal
+          onClose={() => setAdminModalOpen(false)}
+          apiFetch={apiFetch}
+        />
       )}
 
       {/* Sidebar */}
@@ -599,7 +521,7 @@ function App() {
         )}
 
 
-        <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="sidebar-item" style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Auto-Analysis</span>
           <label className="switch">
             <input
@@ -611,7 +533,7 @@ function App() {
           </label>
         </div>
 
-        <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="sidebar-item" style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Visual Analysis</span>
           <label className="switch">
             <input
@@ -625,14 +547,14 @@ function App() {
 
         <div
           className="sidebar-item"
-          style={{ marginTop: '16px' }}
+          style={{ marginTop: '5px' }}
           onClick={createNewChat}
         >
           <Plus size={18} className="sidebar-icon" />
           <span className="sidebar-text">New chat</span>
         </div>
 
-        <div className="sidebar-item" style={{ cursor: 'default', color: 'var(--text-main)', opacity: 0.5, marginTop: '16px' }}>
+        <div className="sidebar-item" style={{ cursor: 'default', color: 'var(--text-main)', opacity: 0.5, marginTop: '5px' }}>
           <MessageSquare size={18} className="sidebar-icon" />
           <span className="sidebar-text" style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase' }}>Recent Chats</span>
         </div>
@@ -683,7 +605,7 @@ function App() {
             onClick={() => setAdminModalOpen(true)}
           >
             <Settings size={18} className="sidebar-icon" />
-            <span className="sidebar-text">Admin Settings</span>
+            <span className="sidebar-text">Users Settings</span>
           </div>
         )}
 
@@ -712,20 +634,33 @@ function App() {
               Type, discover, go.
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <MessageBubble
-                key={idx}
-                message={msg}
-                showCost={userPermissions.display_token}
-                showSql={userPermissions.display_sql}
-                onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
-                onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
-              />
-            ))
+            <>
+              {messages.map((msg, idx) => (
+                <MessageBubble
+                  key={idx}
+                  message={msg}
+                  showCost={userPermissions.display_token}
+                  showSql={userPermissions.display_sql}
+                  onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
+                  onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
+                  onUpdateMessage={(updates) => handleUpdateMessage(msg.id, updates)}
+                />
+              ))}
+              {messages.filter(m => m.role === 'user').length >= 10 && (
+                <div style={{ padding: '2px 0', color: '#ef4444', textAlign: 'center', width: '100%', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Maximum limit of 10 questions reached. Please switch to a new chat.
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <ChatInput onSend={handleSend} onStop={handleStop} isLoading={isLoading} />
+        <ChatInput 
+          onSend={handleSend} 
+          onStop={handleStop} 
+          isLoading={isLoading} 
+          isLimitReached={messages.filter(m => m.role === 'user').length > 2}
+        />
       </main>
     </div>
   )

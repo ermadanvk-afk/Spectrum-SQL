@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
 
-export default function ChatInput({ onSend, onStop, isLoading }) {
+export default function ChatInput({ onSend, onStop, isLoading, isLimitReached }) {
   const [input, setInput] = React.useState('');
   const textareaRef = useRef(null);
 
@@ -36,21 +36,19 @@ export default function ChatInput({ onSend, onStop, isLoading }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="How can I help you today?"
+            placeholder={isLimitReached ? "Chat disabled" : "How can I help you today?"}
             rows={1}
-            disabled={isLoading}
+            disabled={isLoading || isLimitReached}
           />
           <button 
             type={isLoading ? "button" : "submit"} 
             className="send-btn"
-            disabled={!isLoading && !input.trim()}
+            disabled={(!isLoading && !input.trim()) || isLimitReached}
             onClick={isLoading ? onStop : undefined}
           >
             {isLoading ? <Square size={14} fill="currentColor" /> : <ArrowUp size={16} />}
           </button>
         </div>
-        
-
       </form>
     </div>
   );

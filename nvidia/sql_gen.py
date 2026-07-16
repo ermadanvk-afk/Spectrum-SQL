@@ -27,7 +27,7 @@ class OpenAIChatWrapper:
         print("\nRetrying payload(Validation fix)...")
         
         response = await self.client.chat.completions.create(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             messages=self.messages,
             max_tokens=4000,
             # extra_body={"reasoning": {"enabled": True}},
@@ -161,16 +161,16 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
     
     try:
         response = await client.chat.completions.create(
-          model="gemini-2.5-flash",
+          model="gemini-3.1-flash-lite",
           messages=messages,
           max_tokens=4500,
         #   extra_body={"reasoning": {"enabled": True}},
           temperature=0.0
         )
-        print("[NVIDIA PIPELINE] Received response from Laguna!")
+        print("[NVIDIA PIPELINE] Received response from gemini!")
     except Exception as e:
-        print(f"[NVIDIA PIPELINE] Error from OpenRouter: {e}")
-        log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling OpenRouter LLM", message_id=message_id)
+        print(f"[NVIDIA PIPELINE] Error from Gemini: {e}")
+        log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling gemini LLM", message_id=message_id)
         raise e
     
     response_msg = response.choices[0].message

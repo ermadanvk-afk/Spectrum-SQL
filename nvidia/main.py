@@ -62,6 +62,8 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is inactive")
     return user
 
 async def get_current_user_optional(request: Request, token: str = Depends(oauth2_scheme),db:AsyncSession=Depends(get_db)) -> User:
@@ -91,6 +93,20 @@ class UserCreate(BaseModel):
     display_token : bool = False
     display_sql : bool = False
     user_type : int = 2
+    is_active : bool = True
+
+class UserUpdate(BaseModel):
+    username: str = None
+    password: str = None
+    role: str = None
+    display_token: bool = None
+    display_sql: bool = None
+    user_type: int = None
+    is_active: bool = None
+
+class FeedbackRequest(BaseModel):
+    is_useful: bool = None
+    user_comment: str = None
 nli_classifier = None
 
 def get_nli_classifier():
@@ -99,7 +115,8 @@ def get_nli_classifier():
         print("Loading NLI model for intent classification...")
         nli_classifier = pipeline(
             "zero-shot-classification",
-            model="cross-encoder/nli-deberta-v3-small"
+            model="cross-encoder/nli-deberta-v3-small",
+            local_files_only=True
         )
     return nli_classifier
 
@@ -221,7 +238,7 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None,
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from logger import create_log_sync, update_log_sync, log_error_sync
+from logger import create_log_sync, update_log_sync, log_error_sync, SystemLog
 
 @app.post("/api/ask")
 async def ask_question(request_model: QueryRequest, request: Request,current_user:User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -254,6 +271,10 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
             )
         )
         messages = result.scalars().all()
+        
+        user_msg_count = sum(1 for m in messages if m.role == 'user')
+        if user_msg_count >= 10:
+            raise HTTPException(status_code=400, detail="This session has reached the maximum limit of 10 questions. Please start a new chat.")
         
         # If this is the first message in the session, update the session title
         if not messages and session_id:
@@ -336,6 +357,9 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         await db.commit()
         await db.refresh(asst_msg)
         
+        # Relink the SystemLog to the assistant message so feedback works
+        await asyncio.to_thread(update_log_sync, message_id=user_msg.id, new_message_id=asst_msg.id)
+        
         result_data["message_id"] = asst_msg.id
         result_data["session_id"] = session_id
         return result_data
@@ -368,7 +392,7 @@ async def analyze_data_v2(request_model: AnalyzeDataRequest, current_user: User 
 
 @app.get("/api/sessions")
 async def get_sessions(current_user:User = Depends(get_current_user),db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Session).where(Session.user_id==current_user.id).order_by(Session.created_at.desc()))
+    result = await db.execute(select(Session).where(Session.user_id==current_user.id).order_by(Session.created_at.desc()).limit(50))
     sessions = result.scalars().all()
     return [{"id": s.id, "title": s.title, "date": s.created_at.isoformat()} for s in sessions]
 
@@ -397,9 +421,22 @@ async def get_session_messages(session_id: str,current_user:User=Depends(get_cur
     sess = result.scalar_one_or_none()
     if not sess:
         raise HTTPException(status_code=404,detail="session not found") 
-    result = await db.execute(select(Message).where(Message.session_id == session_id).order_by(Message.id))
-    messages = result.scalars().all()
-    return [msg.to_dict() for msg in messages]
+    result = await db.execute(
+        select(Message, SystemLog.is_useful, SystemLog.user_comment)
+        .outerjoin(SystemLog, Message.id == SystemLog.message_id)
+        .where(Message.session_id == session_id)
+        .order_by(Message.id)
+    )
+    rows = result.all()
+    
+    messages = []
+    for msg, is_useful, user_comment in rows:
+        msg_dict = msg.to_dict()
+        msg_dict["is_useful"] = is_useful
+        msg_dict["user_comment"] = user_comment
+        messages.append(msg_dict)
+        
+    return messages
 
 @app.put("/api/messages/{message_id}")
 async def update_message(message_id: int, request_model: MessageUpdateRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -425,6 +462,19 @@ async def update_message(message_id: int, request_model: MessageUpdateRequest, c
     await db.commit()
     return {"status": "success"}
 
+@app.post("/api/messages/{message_id}/feedback")
+async def submit_feedback(message_id: int, request_model: FeedbackRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    kwargs = {}
+    if request_model.is_useful is not None:
+        kwargs["is_useful"] = request_model.is_useful
+    if request_model.user_comment is not None:
+        kwargs["user_comment"] = request_model.user_comment
+        
+    if kwargs:
+        import asyncio
+        await asyncio.to_thread(update_log_sync, message_id=message_id, **kwargs)
+        
+    return {"status": "success"}
 @app.post("/api/auth/register")
 async def register_user(user_data:UserCreate, current_user: User = Depends(get_current_user_optional), db:AsyncSession=Depends(get_db)):
     from sqlalchemy import func
@@ -454,7 +504,8 @@ async def register_user(user_data:UserCreate, current_user: User = Depends(get_c
         role_id=role_id,
         display_token=user_data.display_token,
         display_sql=user_data.display_sql,
-        user_type=user_data.user_type
+        user_type=user_data.user_type,
+        is_active=user_data.is_active
     )
     db.add(new_user)
     await db.commit()
@@ -470,6 +521,9 @@ async def login_user(user_data:UserCreate, response: Response, db:AsyncSession =
 
     if not user or not verify_password(user_data.password,user.hashed_password):
         raise HTTPException(status_code = 401,detail="Incorrect username or password")
+        
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is inactive")
     
     access_token = create_access_token(data={"sub":user.username})
     refresh_token = create_refresh_token(data={"sub":user.username})
@@ -577,6 +631,62 @@ async def logout_user(request: Request, response: Response, db: AsyncSession = D
     response.delete_cookie("access_token", httponly=True, samesite="lax")
     response.delete_cookie("refresh_token", httponly=True, samesite="lax")
     return {"status": "success", "message": "Logged out successfully"}
+
+@app.get("/api/users")
+async def get_users(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can view users.")
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.role)))
+    users = result.scalars().all()
+    return [{
+        "id": u.id,
+        "username": u.username,
+        "role": u.role.name if u.role else None,
+        "display_token": u.display_token,
+        "display_sql": u.display_sql,
+        "user_type": u.user_type,
+        "is_active": u.is_active
+    } for u in users]
+
+@app.put("/api/users/{user_id}")
+async def update_user(user_id: int, user_data: UserUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can edit users.")
+    
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if user_data.username is not None:
+        user.username = user_data.username
+    if user_data.password:
+        user.hashed_password = get_password_hash(user_data.password)
+    if user_data.role is not None:
+        role_result = await db.execute(select(Role).where(Role.name == user_data.role))
+        db_role = role_result.scalar_one_or_none()
+        if not db_role:
+            raise HTTPException(status_code=400, detail=f"Role '{user_data.role}' not found")
+        user.role_id = db_role.id
+    if user_data.display_token is not None:
+        user.display_token = user_data.display_token
+    if user_data.display_sql is not None:
+        user.display_sql = user_data.display_sql
+    if user_data.user_type is not None:
+        user.user_type = user_data.user_type
+    if user_data.is_active is not None:
+        user.is_active = user_data.is_active
+        
+    await db.commit()
+    return {"status": "success", "message": "User updated successfully"}
+
+@app.get("/api/roles")
+async def get_roles(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Role))
+    roles = result.scalars().all()
+    return [{"id": r.id, "name": r.name} for r in roles]
+
 
 @app.get("/api/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):

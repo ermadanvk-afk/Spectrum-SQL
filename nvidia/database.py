@@ -77,6 +77,7 @@ class User(Base): # user model added
     display_token = Column(Boolean, default=False)
     display_sql = Column(Boolean, default=False)
     user_type = Column(Integer, default=2) # 1 = Admin, 2 = General User
+    is_active = Column(Boolean, default=True)
     
     role = relationship("Role", back_populates="users")
 
