@@ -4,8 +4,8 @@
 
 # environments
 myenv/
-dist
-
+dist/
+nltk_data/
 # python artifacts
 __pycache__/
 *.pyc
