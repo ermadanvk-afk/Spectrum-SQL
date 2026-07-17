@@ -273,7 +273,7 @@ function App() {
   }
 
   const handleUpdateMessage = (messageId, updates) => {
-    setMessages(prev => prev.map(msg => 
+    setMessages(prev => prev.map(msg =>
       msg.id === messageId ? { ...msg, ...updates } : msg
     ));
   };
@@ -655,11 +655,11 @@ function App() {
           )}
         </div>
 
-        <ChatInput 
-          onSend={handleSend} 
-          onStop={handleStop} 
-          isLoading={isLoading} 
-          isLimitReached={messages.filter(m => m.role === 'user').length > 2}
+        <ChatInput
+          onSend={handleSend}
+          onStop={handleStop}
+          isLoading={isLoading}
+          isLimitReached={messages.filter(m => m.role === 'user').length >= 10}
         />
       </main>
     </div>

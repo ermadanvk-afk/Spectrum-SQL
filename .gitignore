@@ -3,7 +3,8 @@
 *.env
 
 # environments
-
+myenv/
+dist
 
 # python artifacts
 __pycache__/
