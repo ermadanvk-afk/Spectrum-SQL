@@ -3,26 +3,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from logger import log_error_sync
 
-_engine = None
+_engines = {}
 
 def get_engine(connection_string: str) -> Engine:
-    global _engine
-    if _engine is None:
+    global _engines
+    if connection_string not in _engines:
         try:
             params = urllib.parse.quote_plus(connection_string)
             # Create a SQLAlchemy engine for SQL Server via pyodbc
             engine_url = f"mssql+pyodbc:///?odbc_connect={params}"
-            _engine = create_engine(
+            engine = create_engine(
                 engine_url,
                 pool_size=5,         # Number of connections to keep open
                 max_overflow=10,     # Max extra connections if pool is full
                 pool_pre_ping=True,  # Test connection before using it
                 pool_recycle=3600    # Recreate connections every hour
             )
+            _engines[connection_string] = engine
         except Exception as e:
             log_error_sync("connect", "DB_CONNECTION_ERROR", e, "Failed to create database engine")
             raise RuntimeError(f"Failed to create database engine: {e}")
-    return _engine
+    return _engines[connection_string]
 
 if __name__ == "__main__":
     import os

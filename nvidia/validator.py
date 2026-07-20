@@ -3,7 +3,7 @@ import os
 
 import sqlfluff
 from sql_gen import generate_sql
-from logger import update_log_sync, log_error_sync
+from logger import update_log_sync_by_id, log_error_sync
 
 import re
 
@@ -11,7 +11,7 @@ def sanitize_sql(sql: str) -> str:
     sql = sql.replace("≥", ">=").replace("≤", "<=")
     return sql
 
-async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, message_id: int = None, allowed_access: list = None) -> tuple[bool, str, int, int]:
+async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, log_id: int = None, allowed_access: list = None) -> tuple[bool, str, int, int]:
     retry_in_tokens = 0
     retry_out_tokens = 0
     
@@ -87,8 +87,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                     raw_conn.close() # Returns the connection to the pool
                     
             # Log SUCCESS
-            update_log_sync(
-                message_id=message_id,
+            update_log_sync_by_id(
+                log_id=log_id,
                 module="validator",
                 level="INFO",
                 event_type="VALIDATION_SUCCESS",
@@ -103,7 +103,7 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                 retry_prompt = f"{user_query}\nThe following SQL has an error: {error_message}\nFix it and return only the corrected SQL."
                 
                 log_error_sync(
-                    message_id=message_id,
+                    log_id=log_id,
                     module="validator",
                     event_type="VALIDATION_RETRY",
                     error=e,
@@ -132,8 +132,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                 pass
                 
     # Log Failure
-    update_log_sync(
-        message_id=message_id,
+    update_log_sync_by_id(
+        log_id=log_id,
         module="validator",
         level="ERROR",
         event_type="VALIDATION_FAILED",

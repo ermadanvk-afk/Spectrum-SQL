@@ -27,19 +27,20 @@ class Session(Base):
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    session_id = Column(String, index=True)
-    role = Column(String) # 'user' or 'assistant'
-    type = Column(String, nullable=True) # 'success' or 'error'
-    query = Column(Text, nullable=True)
+    session_id = Column(String, ForeignKey("sessions.id"))
+    role = Column(String)  # 'user' or 'assistant'
+    type = Column(String)  # 'success', 'error', etc.
     content = Column(Text, nullable=True)
+    query = Column(Text, nullable=True)
     sql = Column(Text, nullable=True)
     original_sql = Column(Text, nullable=True)
     explanation = Column(Text, nullable=True)
-    data = Column(Text, nullable=True) # Stored as JSON string
-    cost = Column(Text, nullable=True) # Stored as JSON string
-    analysis = Column(Text, nullable=True) # Stored as JSON string
-    visual_spec = Column(Text, nullable=True) # Stored as JSON string
+    data = Column(Text, nullable=True)
+    cost = Column(Text, nullable=True)
+    analysis = Column(Text, nullable=True)
+    visual_spec = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    db_id = Column(Integer, ForeignKey("db_master.id"), nullable=True)
 
     def to_dict(self):
         return {
@@ -56,6 +57,7 @@ class Message(Base):
             "cost": json.loads(self.cost) if self.cost else None,
             "analysis": json.loads(self.analysis) if self.analysis else None,
             "visual_spec": json.loads(self.visual_spec) if self.visual_spec else None,
+            "db_id": self.db_id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "isHistorical": True
         }
@@ -80,6 +82,7 @@ class User(Base): # user model added
     is_active = Column(Boolean, default=True)
     
     role = relationship("Role", back_populates="users")
+    database_access = relationship("UserDatabaseAccess", back_populates="user", cascade="all, delete")
 
 class Role(Base):
     __tablename__ = "roles"
@@ -106,3 +109,20 @@ class RefreshToken(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship("User")
+
+class DBMaster(Base):
+    __tablename__ = "db_master"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    connection_string = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    users = relationship("UserDatabaseAccess", back_populates="db", cascade="all, delete")
+
+class UserDatabaseAccess(Base):
+    __tablename__ = "user_database_access"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True, nullable=False)
+    db_id = Column(Integer, ForeignKey("db_master.id"), primary_key=True, nullable=False)
+    
+    user = relationship("User", back_populates="database_access")
+    db = relationship("DBMaster", back_populates="users")

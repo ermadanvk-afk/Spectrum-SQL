@@ -38,7 +38,7 @@ function Auth({ onLoginSuccess }) {
           display_token: data.display_token,
           display_sql: data.display_sql,
           user_type: data.user_type
-        }, data.username)
+        }, data.username, data.allowed_databases)
       } else {
         throw new Error('No access token returned by the server')
       }

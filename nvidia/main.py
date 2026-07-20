@@ -25,7 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import json
 import uuid
 
-from database import init_db, get_db, Session, Message, User, Role, RefreshToken
+from typing import Optional
+from database import init_db, get_db, Session, Message, User, Role, RefreshToken, DBMaster, UserDatabaseAccess
 from auth import get_password_hash, create_access_token, verify_password, decode_access_token, create_refresh_token, REFRESH_TOKEN_EXPIRE_MINS, ACCESS_TOKEN_EXPIRE_MINS
 from fastapi.security import OAuth2PasswordBearer
 
@@ -74,7 +75,8 @@ async def get_current_user_optional(request: Request, token: str = Depends(oauth
 
 class QueryRequest(BaseModel):
     query: str
-    session_id: str = None
+    session_id: Optional[str] = None
+    db_id: Optional[int] = None
 
 class MessageUpdateRequest(BaseModel):
     analysis: dict = None
@@ -94,6 +96,7 @@ class UserCreate(BaseModel):
     display_sql : bool = False
     user_type : int = 2
     is_active : bool = True
+    allowed_databases: list[int] = []
 
 class UserUpdate(BaseModel):
     username: str = None
@@ -103,6 +106,7 @@ class UserUpdate(BaseModel):
     display_sql: bool = None
     user_type: int = None
     is_active: bool = None
+    allowed_databases: list[int] = None
 
 class FeedbackRequest(BaseModel):
     is_useful: bool = None
@@ -141,7 +145,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-async def run_pipeline(query: str, history: list = None, message_id: int = None, allowed_access: list = None) -> dict:
+async def run_pipeline(query: str, history: list = None, log_id: int = None, allowed_access: list = None, connection_string: str = None) -> dict:
     # Step 0: Intent Classification (NLI)
     classifier = get_nli_classifier()
     
@@ -187,7 +191,7 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None,
         query, 
         return_response=True,
         history=history,
-        message_id=message_id
+        log_id=log_id
     )
     
     usage = response_obj.usage_metadata
@@ -199,7 +203,7 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None,
         sql_raw, 
         query, 
         chat=chat,
-        message_id=message_id,
+        log_id=log_id,
         allowed_access=allowed_access
     )
     in_tok += retry_in
@@ -218,10 +222,11 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None,
         raise HTTPException(status_code=400, detail="Query validation failed. Unable to safely generate SQL.")
         
     # Step 3: Execute SQL
-    if not conn_str or conn_str == "your_sql_server_connection_string":
+    target_conn_str = connection_string or conn_str
+    if not target_conn_str or target_conn_str == "your_sql_server_connection_string":
         raise HTTPException(status_code=500, detail="Database connection string not configured.")
         
-    columns, rows = execute_query(final_sql, connection_string=conn_str, message_id=message_id)
+    columns, rows = execute_query(final_sql, connection_string=target_conn_str, log_id=log_id)
     
     # Calculate cost
     cost_info = calculate_cost(in_tok, out_tok)
@@ -238,7 +243,7 @@ async def run_pipeline(query: str, history: list = None, message_id: int = None,
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from logger import create_log_sync, update_log_sync, log_error_sync, SystemLog
+from logger import create_log_sync, update_log_sync_by_id, log_error_sync, SystemLog
 
 @app.post("/api/ask")
 async def ask_question(request_model: QueryRequest, request: Request,current_user:User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
@@ -303,7 +308,7 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
         await db.refresh(user_msg)
         
         # Initiate the single-row log trace for this query
-        create_log_sync(session_id, user_msg.id, request_model.query)
+        log_id = create_log_sync(session_id, user_msg.id, request_model.query)
 
         # Fetch RoleTableAccess for current_user
         from database import RoleTableAccess
@@ -318,8 +323,38 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
                     "restricted_columns": json.loads(acc.restricted_columns) if acc.restricted_columns else []
                 })
 
+        # Determine connection string
+        target_conn_string = None
+        actual_db_id = None
+        if request_model.db_id:
+            # Check if user has access
+            db_access_result = await db.execute(select(UserDatabaseAccess).where(UserDatabaseAccess.user_id == current_user.id, UserDatabaseAccess.db_id == request_model.db_id))
+            if not db_access_result.scalar_one_or_none() and current_user.user_type != 1:
+                return {"status": "error", "explanation": "You don't have access to this database. Please contact the admin."}
+            db_result = await db.execute(select(DBMaster).where(DBMaster.id == request_model.db_id))
+            db_obj = db_result.scalar_one_or_none()
+            if db_obj:
+                target_conn_string = db_obj.connection_string
+                actual_db_id = db_obj.id
+        elif current_user.user_type != 1:
+            # If no db_id provided but user is not admin, fallback to their first allowed DB
+            db_access_result = await db.execute(select(UserDatabaseAccess).where(UserDatabaseAccess.user_id == current_user.id).limit(1))
+            first_access = db_access_result.scalar_one_or_none()
+            if first_access:
+                db_result = await db.execute(select(DBMaster).where(DBMaster.id == first_access.db_id))
+                db_obj = db_result.scalar_one_or_none()
+                if db_obj:
+                    target_conn_string = db_obj.connection_string
+                    actual_db_id = db_obj.id
+            else:
+                return {"status": "error", "explanation": "You don't have access to any database. Please contact the admin."}
+
+        # Check if we have any valid connection string to use
+        if not target_conn_string and (not conn_str or conn_str == "your_sql_server_connection_string"):
+            return {"status": "error", "explanation": "Database connection string not configured. Please contact the admin."}
+
         # Wrap the whole pipeline in an asyncio task
-        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history, user_msg.id, allowed_access))
+        pipeline_task = asyncio.create_task(run_pipeline(request_model.query, history, log_id, allowed_access, target_conn_string))
         
         # Poll for client disconnect
         while not pipeline_task.done():
@@ -351,17 +386,21 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
             original_sql=result_data.get("original_sql"),
             explanation=result_data.get("explanation") if result_data.get("status") == "success" else None,
             data=json.dumps(result_data.get("data"), default=json_serial) if result_data.get("data") is not None else None,
-            cost=json.dumps(result_data.get("cost"), default=json_serial) if result_data.get("cost") is not None else None
+            cost=json.dumps(result_data.get("cost"), default=json_serial) if result_data.get("cost") is not None else None,
+            db_id=actual_db_id
         )
         db.add(asst_msg)
         await db.commit()
         await db.refresh(asst_msg)
         
         # Relink the SystemLog to the assistant message so feedback works
-        await asyncio.to_thread(update_log_sync, message_id=user_msg.id, new_message_id=asst_msg.id)
+        from logger import update_log_sync_by_id
+        await asyncio.to_thread(update_log_sync_by_id, log_id=log_id, new_message_id=asst_msg.id)
         
         result_data["message_id"] = asst_msg.id
         result_data["session_id"] = session_id
+        result_data["db_id"] = actual_db_id
+        result_data["log_id"] = log_id
         return result_data
         
     except asyncio.CancelledError:
@@ -421,19 +460,21 @@ async def get_session_messages(session_id: str,current_user:User=Depends(get_cur
     sess = result.scalar_one_or_none()
     if not sess:
         raise HTTPException(status_code=404,detail="session not found") 
+    from sqlalchemy import and_
     result = await db.execute(
-        select(Message, SystemLog.is_useful, SystemLog.user_comment)
-        .outerjoin(SystemLog, Message.id == SystemLog.message_id)
+        select(Message, SystemLog.is_useful, SystemLog.user_comment, SystemLog.id.label("log_id"))
+        .outerjoin(SystemLog, and_(Message.id == SystemLog.message_id, Message.session_id == SystemLog.session_id))
         .where(Message.session_id == session_id)
         .order_by(Message.id)
     )
     rows = result.all()
     
     messages = []
-    for msg, is_useful, user_comment in rows:
+    for msg, is_useful, user_comment, log_id in rows:
         msg_dict = msg.to_dict()
         msg_dict["is_useful"] = is_useful
         msg_dict["user_comment"] = user_comment
+        msg_dict["log_id"] = log_id
         messages.append(msg_dict)
         
     return messages
@@ -472,6 +513,9 @@ async def submit_feedback(message_id: int, request_model: FeedbackRequest, curre
         
     if kwargs:
         import asyncio
+        # message_id here is the messages table PK, not system_logs.id
+        # Use update_log_sync which looks up by SystemLog.message_id column
+        from logger import update_log_sync
         await asyncio.to_thread(update_log_sync, message_id=message_id, **kwargs)
         
     return {"status": "success"}
@@ -508,6 +552,10 @@ async def register_user(user_data:UserCreate, current_user: User = Depends(get_c
         is_active=user_data.is_active
     )
     db.add(new_user)
+    await db.flush()
+    if user_data.allowed_databases:
+        for db_id in user_data.allowed_databases:
+            db.add(UserDatabaseAccess(user_id=new_user.id, db_id=db_id))
     await db.commit()
     return {"status":"success","message":"User registered successfully"}
 
@@ -516,7 +564,7 @@ from fastapi import Response
 @app.post("/api/auth/login")
 async def login_user(user_data:UserCreate, response: Response, db:AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role)).where(User.username == user_data.username))
+    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.username == user_data.username))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(user_data.password,user.hashed_password):
@@ -556,6 +604,11 @@ async def login_user(user_data:UserCreate, response: Response, db:AsyncSession =
         secure=False,
     )
     
+    allowed_dbs = []
+    for acc in user.database_access:
+        if acc.db:
+            allowed_dbs.append({"id": acc.db.id, "name": acc.db.name})
+            
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -563,7 +616,8 @@ async def login_user(user_data:UserCreate, response: Response, db:AsyncSession =
         "role": role_name,
         "display_token": user.display_token,
         "display_sql": user.display_sql,
-        "user_type": user.user_type
+        "user_type": user.user_type,
+        "allowed_databases": allowed_dbs
     }
 
 @app.post("/api/auth/refresh")
@@ -637,7 +691,7 @@ async def get_users(current_user: User = Depends(get_current_user), db: AsyncSes
     if current_user.user_type != 1:
         raise HTTPException(status_code=403, detail="Only Admins can view users.")
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role)))
+    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)))
     users = result.scalars().all()
     return [{
         "id": u.id,
@@ -646,7 +700,8 @@ async def get_users(current_user: User = Depends(get_current_user), db: AsyncSes
         "display_token": u.display_token,
         "display_sql": u.display_sql,
         "user_type": u.user_type,
-        "is_active": u.is_active
+        "is_active": u.is_active,
+        "allowed_databases": [acc.db_id for acc in u.database_access]
     } for u in users]
 
 @app.put("/api/users/{user_id}")
@@ -678,6 +733,11 @@ async def update_user(user_id: int, user_data: UserUpdate, current_user: User = 
     if user_data.is_active is not None:
         user.is_active = user_data.is_active
         
+    if user_data.allowed_databases is not None:
+        await db.execute(delete(UserDatabaseAccess).where(UserDatabaseAccess.user_id == user_id))
+        for db_id in user_data.allowed_databases:
+            db.add(UserDatabaseAccess(user_id=user_id, db_id=db_id))
+            
     await db.commit()
     return {"status": "success", "message": "User updated successfully"}
 
@@ -687,19 +747,82 @@ async def get_roles(current_user: User = Depends(get_current_user), db: AsyncSes
     roles = result.scalars().all()
     return [{"id": r.id, "name": r.name} for r in roles]
 
+class DBMasterCreate(BaseModel):
+    name: str
+    connection_string: str
+
+class DBMasterUpdate(BaseModel):
+    name: str = None
+    connection_string: str = None
+
+@app.get("/api/databases")
+async def get_databases(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can view databases.")
+    result = await db.execute(select(DBMaster))
+    dbs = result.scalars().all()
+    return [{"id": d.id, "name": d.name, "connection_string": d.connection_string} for d in dbs]
+
+@app.post("/api/databases")
+async def create_database(db_data: DBMasterCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can create databases.")
+    result = await db.execute(select(DBMaster).where(DBMaster.name == db_data.name))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Database name already exists")
+    new_db = DBMaster(name=db_data.name, connection_string=db_data.connection_string)
+    db.add(new_db)
+    await db.commit()
+    return {"status": "success", "message": "Database added"}
+
+@app.put("/api/databases/{db_id}")
+async def update_database(db_id: int, db_data: DBMasterUpdate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can edit databases.")
+    result = await db.execute(select(DBMaster).where(DBMaster.id == db_id))
+    db_obj = result.scalar_one_or_none()
+    if not db_obj:
+        raise HTTPException(status_code=404, detail="Database not found")
+    if db_data.name is not None:
+        db_obj.name = db_data.name
+    if db_data.connection_string is not None:
+        db_obj.connection_string = db_data.connection_string
+    await db.commit()
+    return {"status": "success", "message": "Database updated"}
+
+@app.delete("/api/databases/{db_id}")
+async def delete_database(db_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can delete databases.")
+    result = await db.execute(select(DBMaster).where(DBMaster.id == db_id))
+    db_obj = result.scalar_one_or_none()
+    if not db_obj:
+        raise HTTPException(status_code=404, detail="Database not found")
+    await db.execute(delete(DBMaster).where(DBMaster.id == db_id))
+    await db.commit()
+    return {"status": "success", "message": "Database deleted"}
+
 
 @app.get("/api/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role)).where(User.id == current_user.id))
+    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.id == current_user.id))
     user = result.scalar_one_or_none()
     role_name = user.role.name if user and user.role else None
+    
+    allowed_dbs = []
+    if user:
+        for acc in user.database_access:
+            if acc.db:
+                allowed_dbs.append({"id": acc.db.id, "name": acc.db.name})
+                
     return {
         "username": current_user.username, 
         "role": role_name,
         "display_token": user.display_token,
         "display_sql": user.display_sql,
-        "user_type": user.user_type
+        "user_type": user.user_type,
+        "allowed_databases": allowed_dbs
     }
 if __name__ == "__main__":
     import uvicorn

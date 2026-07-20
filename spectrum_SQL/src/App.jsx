@@ -18,6 +18,9 @@ function App() {
 
   const [userPermissions, setUserPermissions] = useState({ display_token: false, display_sql: false, user_type: 2 })
   const [adminModalOpen, setAdminModalOpen] = useState(false)
+  const [allowedDatabases, setAllowedDatabases] = useState([]);
+  const [selectedDbId, setSelectedDbId] = useState(null);
+  const [isDbDropdownOpen, setIsDbDropdownOpen] = useState(false);
 
   // Chat History State
   const [allChats, setAllChats] = useState([])
@@ -41,7 +44,7 @@ function App() {
     setCurrentChatId(null)
   }
 
-  const handleLoginSuccess = (tokenOrRole, possibleRole, perms, username) => {
+  const handleLoginSuccess = (tokenOrRole, possibleRole, perms, username, databases) => {
     const role = possibleRole || tokenOrRole // Handle old and new Auth.jsx signatures
     setIsAuthenticated(true)
     setUserRole(role || null)
@@ -50,6 +53,10 @@ function App() {
     }
     if (username) {
       setUserName(username)
+    }
+    if (databases) {
+      setAllowedDatabases(databases);
+      if (databases.length > 0) setSelectedDbId(databases[0].id);
     }
   }
 
@@ -108,6 +115,10 @@ function App() {
             display_sql: data.display_sql,
             user_type: data.user_type
           })
+          if (data.allowed_databases) {
+            setAllowedDatabases(data.allowed_databases);
+            if (data.allowed_databases.length > 0) setSelectedDbId(data.allowed_databases[0].id);
+          }
         } else {
           setIsAuthenticated(false)
         }
@@ -142,7 +153,7 @@ function App() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages.length, isLoading, currentChatId])
 
   const handleSend = async (query) => {
     // Add user message to UI
@@ -184,7 +195,8 @@ function App() {
         },
         body: JSON.stringify({
           query: query,
-          session_id: sessionId
+          session_id: sessionId,
+          db_id: selectedDbId
         }),
         signal: controller.signal
       })
@@ -197,7 +209,12 @@ function App() {
         newMsgs.pop() // remove loading
 
         if (!response.ok) {
-          let errorContent = data.detail || "An error occurred while generating the response.";
+          let errorContent = "An error occurred while generating the response.";
+          if (typeof data.detail === 'string') {
+            errorContent = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errorContent = data.detail.map(e => e.msg).join(', ');
+          }
           const lowerError = errorContent.toLowerCase();
           if (lowerError.includes('timeout') || lowerError.includes('hyt00')) {
             errorContent = "The query took longer than the 45-second limit and was stopped. Please try a more specific question, or ask for a narrower time range.";
@@ -360,6 +377,10 @@ function App() {
     isSwitchingChatRef.current = true;
     handleStop(); // Abort any ongoing request
     setCurrentChatId(chatId);
+    
+    const chat = allChats.find(c => c.id === chatId);
+    // Removed automatic database switching on chat reload
+
     setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
 
     try {
@@ -626,7 +647,68 @@ function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content" style={{ position: 'relative' }}>
+        {isAuthenticated && allowedDatabases.length > 0 && (
+          <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 100 }}>
+            <div 
+              style={{ 
+                backgroundColor: 'rgba(30, 30, 30, 0.8)', 
+                backdropFilter: 'blur(8px)',
+                border: '1px solid #333', 
+                borderRadius: '20px', 
+                padding: '8px 16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                cursor: allowedDatabases.length > 1 ? 'pointer' : 'default',
+                position: 'relative'
+              }}
+              onClick={() => allowedDatabases.length > 1 && setIsDbDropdownOpen(!isDbDropdownOpen)}
+            >
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
+              <span style={{ color: '#eee', fontSize: '0.85rem', fontWeight: 600 }}>
+                {allowedDatabases.find(db => db.id === selectedDbId)?.name || 'Default Database'}
+              </span>
+              
+              {isDbDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '110%',
+                  right: 0,
+                  backgroundColor: '#1e1e1e',
+                  border: '1px solid #333',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  minWidth: '200px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                }}>
+                  {allowedDatabases.map(db => (
+                    <div 
+                      key={db.id}
+                      style={{
+                        padding: '10px 16px',
+                        color: db.id === selectedDbId ? '#d97757' : '#ccc',
+                        backgroundColor: db.id === selectedDbId ? 'rgba(217, 119, 87, 0.1)' : 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                      onClick={() => {
+                        if (db.id !== selectedDbId) {
+                          setSelectedDbId(db.id);
+                          //  setMessages([]);
+                          //  setCurrentChatId(null);
+                        }
+                        setIsDbDropdownOpen(false);
+                      }}
+                    >
+                      {db.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="chat-container" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="claude-greeting">
@@ -641,6 +723,7 @@ function App() {
                   message={msg}
                   showCost={userPermissions.display_token}
                   showSql={userPermissions.display_sql}
+                  allowedDatabases={allowedDatabases}
                   onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
                   onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
                   onUpdateMessage={(updates) => handleUpdateMessage(msg.id, updates)}

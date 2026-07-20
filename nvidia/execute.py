@@ -1,9 +1,9 @@
 from connect import get_engine
 from sqlalchemy import text
 import contextlib
-from logger import log_error_sync, update_log_sync
+from logger import log_error_sync, update_log_sync_by_id
 
-def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 45, message_id: int = None) -> tuple[list[str], list[dict]]:
+def execute_query(sql: str, connection_string: str = None, connection=None, timeout_seconds: int = 45, log_id: int = None) -> tuple[list[str], list[dict]]:
     try:
         if connection is None:
             if not connection_string:
@@ -28,38 +28,34 @@ def execute_query(sql: str, connection_string: str = None, connection=None, time
             result = conn.execute(text(sql))
             
             # Extract column names
-            column_names = list(result.keys())
+            columns = list(result.keys())
             
-            # Fetch all rows
-            rows = result.fetchmany(3000)
+            # Extract rows as dictionaries (Limit to 3000 records to prevent memory crash on old DBs)
+            rows = [dict(zip(columns, row)) for row in result.fetchmany(3000)]
             
-            # Convert to list of dictionaries
-            rows_as_list_of_dicts = []
-            for row in rows:
-                if hasattr(row, '_mapping'):
-                    rows_as_list_of_dicts.append(dict(row._mapping))
-                else:
-                    rows_as_list_of_dicts.append(dict(zip(column_names, row)))
-            
-        update_log_sync(
-            message_id=message_id,
+        from logger import update_log_sync_by_id
+        update_log_sync_by_id(
+            log_id=log_id,
             module="execute",
             level="INFO",
             event_type="EXECUTION_SUCCESS",
             message="SQL executed successfully on target DB",
             execution_status="SUCCESS"
         )
-        return (column_names, rows_as_list_of_dicts)
+            
+        return columns, rows
+        
     except Exception as e:
-        update_log_sync(
-            message_id=message_id,
+        from logger import update_log_sync_by_id
+        update_log_sync_by_id(
+            log_id=log_id,
             module="execute",
             level="ERROR",
             event_type="EXECUTION_FAILED",
-            message="SQL execution failed on target DB",
+            message=f"Failed to execute SQL: {str(e)}",
             execution_status="FAILED"
         )
-        log_error_sync("execute", "DB_EXECUTION_ERROR", e, "Error executing SQL on external DB", message_id=message_id, details={"sql": sql})
+        log_error_sync("execute", "DB_EXECUTION_ERROR", e, "Error executing SQL on external DB", log_id=log_id, details={"sql": sql})
         raise RuntimeError(f"Database execution error: {e}\n\nFAILED SQL:\n{sql}")
 
 if __name__ == "__main__":

@@ -55,7 +55,7 @@ function LoadingSteps() {
   );
 }
 
-export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete, onUpdateMessage, showCost, showSql }) {
+export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete, onUpdateMessage, showCost, showSql, allowedDatabases = [] }) {
   const isUser = message.role === 'user';
   
   const [commentText, setCommentText] = useState(message.user_comment || '');
@@ -214,28 +214,35 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
         {/* Feedback Widget */}
         {!isUser && (message.type === 'success' || message.type === 'error') && (
           <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Is the Response useful?</span>
-              <button 
-                onClick={() => handleFeedback(true)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === true ? '#34d399' : 'rgba(255,255,255,0.4)' }}
-                title="Thumbs Up"
-              >
-                <ThumbsUp size={16} />
-              </button>
-              <button 
-                onClick={() => handleFeedback(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === false ? '#ef4444' : 'rgba(255,255,255,0.4)' }}
-                title="Thumbs Down"
-              >
-                <ThumbsDown size={16} />
-              </button>
-              <button
-                onClick={() => setShowCommentInput(!showCommentInput)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: showCommentInput ? 'var(--accent)' : 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}
-              >
-                Comment
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Is the Response useful?</span>
+                <button 
+                  onClick={() => handleFeedback(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === true ? '#34d399' : 'rgba(255,255,255,0.4)' }}
+                  title="Thumbs Up"
+                >
+                  <ThumbsUp size={16} />
+                </button>
+                <button 
+                  onClick={() => handleFeedback(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === false ? '#ef4444' : 'rgba(255,255,255,0.4)' }}
+                  title="Thumbs Down"
+                >
+                  <ThumbsDown size={16} />
+                </button>
+                <button
+                  onClick={() => setShowCommentInput(!showCommentInput)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: showCommentInput ? 'var(--accent)' : 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}
+                >
+                  Comment
+                </button>
+              </div>
+              {message.db_id && (
+                <div style={{ fontSize: '0.85rem', color: '#8c8787ff', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+                  <span style={{opacity: 0.7}}>from {allowedDatabases.find(d => d.id === message.db_id)?.name || 'Unknown Database'}</span>
+                </div>
+              )}
             </div>
             
             {showCommentInput && (

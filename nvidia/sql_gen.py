@@ -4,7 +4,7 @@ import re
 import asyncio
 from dotenv import load_dotenv
 from retriever import fetch_tables, fetch_business_rules, fetch_sample_queries
-from logger import log_error_sync, update_log_sync
+from logger import log_error_sync, update_log_sync_by_id
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
@@ -62,7 +62,7 @@ class OpenAIChatWrapper:
         
         return MockResponse(response_msg.content, in_t, out_t)
 
-async def generate_sql(user_query: str, return_response: bool = False, history: list = None, message_id: int = None) -> str:
+async def generate_sql(user_query: str, return_response: bool = False, history: list = None, log_id: int = None) -> str:
     """
     Takes a user query, retrieves relevant schema chunks, rules, and samples,
     and uses OpenRouter to construct the final SQL query.
@@ -78,8 +78,8 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
     rules_list = [r.payload.get('text', '') for r in rules]
     queries_list = [{"sql": q.payload.get('sql', ''), "desc": q.payload.get('text', '')} for q in queries]
     
-    update_log_sync(
-        message_id=message_id,
+    update_log_sync_by_id(
+        log_id=log_id,
         module="retriever",
         level="INFO",
         event_type="RAG_RETRIEVAL",
@@ -231,7 +231,9 @@ if __name__ == "__main__":
             sql, resp, chat, full_prompt = await generate_sql(query, return_response=True)
             print(sql)
             # Log via db instead of file
-            update_log_sync(
+            from logger import update_log_sync_by_id
+            update_log_sync_by_id(
+                log_id=999,
                 module="sql_gen_test",
                 level="INFO",
                 event_type="TEST_SUCCESS",
