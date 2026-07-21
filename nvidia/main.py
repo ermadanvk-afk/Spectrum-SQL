@@ -59,7 +59,8 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
     username: str = payload.get("sub")
     if username is None:
         raise credentials_exception
-    result = await db.execute(select(User).where(User.username == username))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.roles)).where(User.username == username))
     user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
@@ -91,7 +92,7 @@ class AnalyzeDataRequest(BaseModel):
 class UserCreate(BaseModel):
     username : str
     password : str
-    role : str = None
+    roles : list[str] = []
     display_token : bool = False
     display_sql : bool = False
     user_type : int = 2
@@ -101,7 +102,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     username: str = None
     password: str = None
-    role: str = None
+    roles: list[str] = None
     display_token: bool = None
     display_sql: bool = None
     user_type: int = None
@@ -312,16 +313,21 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
 
         # Fetch RoleTableAccess for current_user
         from database import RoleTableAccess
-        role_id = current_user.role_id
+        role_ids = [r.id for r in current_user.roles] if current_user.roles else []
         allowed_access = []
-        if role_id is not None:
-            access_result = await db.execute(select(RoleTableAccess).where(RoleTableAccess.role_id == role_id))
+        if role_ids:
+            access_result = await db.execute(select(RoleTableAccess).where(RoleTableAccess.role_id.in_(role_ids)))
             access_records = access_result.scalars().all()
+            
+            seen_tables = set()
             for acc in access_records:
-                allowed_access.append({
-                    "table_name": acc.table_name.lower(),
-                    "restricted_columns": json.loads(acc.restricted_columns) if acc.restricted_columns else []
-                })
+                tname = acc.table_name.lower()
+                if tname not in seen_tables:
+                    seen_tables.add(tname)
+                    allowed_access.append({
+                        "table_name": tname,
+                        "restricted_columns": json.loads(acc.restricted_columns) if acc.restricted_columns else []
+                    })
 
         # Determine connection string
         target_conn_string = None
@@ -409,7 +415,33 @@ async def ask_question(request_model: QueryRequest, request: Request,current_use
     except Exception as e:
         print(f"\n[NVIDIA PIPELINE] UNEXPECTED ERROR: {e}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        
+        # Save error message to DB so frontend gets a valid message_id for feedback
+        error_str = str(e)
+        asst_msg = Message(
+            session_id=session_id,
+            role="assistant",
+            type="error",
+            query=request_model.query,
+            content=error_str,
+            db_id=actual_db_id if 'actual_db_id' in locals() else None
+        )
+        db.add(asst_msg)
+        await db.commit()
+        await db.refresh(asst_msg)
+        
+        # Update system log with the error and link it to the newly created error message
+        from logger import update_log_sync_by_id, log_error_sync
+        await asyncio.to_thread(update_log_sync_by_id, log_id=log_id, new_message_id=asst_msg.id)
+        await asyncio.to_thread(log_error_sync, "main", "PIPELINE_ERROR", e, log_id=log_id)
+        
+        return {
+            "status": "error",
+            "explanation": error_str,
+            "message_id": asst_msg.id,
+            "session_id": session_id,
+            "log_id": log_id
+        }
 
 @app.post("/api/analyze")
 async def analyze_data(request_model: AnalyzeDataRequest, current_user: User = Depends(get_current_user)):
@@ -533,19 +565,20 @@ async def register_user(user_data:UserCreate, current_user: User = Depends(get_c
     if existing_user:
         raise HTTPException(status_code=400,detail="Username already registered")
         
-    role_id = None
-    if user_data.role:
-        role_result = await db.execute(select(Role).where(Role.name == user_data.role))
-        db_role = role_result.scalar_one_or_none()
-        if not db_role:
-            raise HTTPException(status_code=400, detail=f"Role '{user_data.role}' not found")
-        role_id = db_role.id
+    roles_list = []
+    if user_data.roles:
+        for role_name in user_data.roles:
+            role_result = await db.execute(select(Role).where(Role.name == role_name))
+            db_role = role_result.scalar_one_or_none()
+            if not db_role:
+                raise HTTPException(status_code=400, detail=f"Role '{role_name}' not found")
+            roles_list.append(db_role)
 
     hashed_pwd = get_password_hash(user_data.password)
     new_user = User(
         username=user_data.username, 
         hashed_password=hashed_pwd, 
-        role_id=role_id,
+        roles=roles_list,
         display_token=user_data.display_token,
         display_sql=user_data.display_sql,
         user_type=user_data.user_type,
@@ -564,7 +597,7 @@ from fastapi import Response
 @app.post("/api/auth/login")
 async def login_user(user_data:UserCreate, response: Response, db:AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.username == user_data.username))
+    result = await db.execute(select(User).options(selectinload(User.roles), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.username == user_data.username))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(user_data.password,user.hashed_password):
@@ -582,7 +615,7 @@ async def login_user(user_data:UserCreate, response: Response, db:AsyncSession =
     db.add(db_refresh_token)
     await db.commit()
     
-    role_name = user.role.name if user.role else None
+    role_names = [r.name for r in user.roles] if user.roles else []
     
     response.set_cookie(
         key="access_token",
@@ -613,7 +646,7 @@ async def login_user(user_data:UserCreate, response: Response, db:AsyncSession =
         "access_token": access_token,
         "token_type": "bearer",
         "username": user.username,
-        "role": role_name,
+        "roles": role_names,
         "display_token": user.display_token,
         "display_sql": user.display_sql,
         "user_type": user.user_type,
@@ -691,12 +724,12 @@ async def get_users(current_user: User = Depends(get_current_user), db: AsyncSes
     if current_user.user_type != 1:
         raise HTTPException(status_code=403, detail="Only Admins can view users.")
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)))
+    result = await db.execute(select(User).options(selectinload(User.roles), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)))
     users = result.scalars().all()
     return [{
         "id": u.id,
         "username": u.username,
-        "role": u.role.name if u.role else None,
+        "roles": [r.name for r in u.roles] if u.roles else [],
         "display_token": u.display_token,
         "display_sql": u.display_sql,
         "user_type": u.user_type,
@@ -709,7 +742,8 @@ async def update_user(user_id: int, user_data: UserUpdate, current_user: User = 
     if current_user.user_type != 1:
         raise HTTPException(status_code=403, detail="Only Admins can edit users.")
     
-    result = await db.execute(select(User).where(User.id == user_id))
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(User).options(selectinload(User.roles)).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -718,12 +752,15 @@ async def update_user(user_id: int, user_data: UserUpdate, current_user: User = 
         user.username = user_data.username
     if user_data.password:
         user.hashed_password = get_password_hash(user_data.password)
-    if user_data.role is not None:
-        role_result = await db.execute(select(Role).where(Role.name == user_data.role))
-        db_role = role_result.scalar_one_or_none()
-        if not db_role:
-            raise HTTPException(status_code=400, detail=f"Role '{user_data.role}' not found")
-        user.role_id = db_role.id
+    if user_data.roles is not None:
+        roles_list = []
+        for role_name in user_data.roles:
+            role_result = await db.execute(select(Role).where(Role.name == role_name))
+            db_role = role_result.scalar_one_or_none()
+            if not db_role:
+                raise HTTPException(status_code=400, detail=f"Role '{role_name}' not found")
+            roles_list.append(db_role)
+        user.roles = roles_list
     if user_data.display_token is not None:
         user.display_token = user_data.display_token
     if user_data.display_sql is not None:
@@ -806,9 +843,9 @@ async def delete_database(db_id: int, current_user: User = Depends(get_current_u
 @app.get("/api/auth/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
-    result = await db.execute(select(User).options(selectinload(User.role), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.id == current_user.id))
+    result = await db.execute(select(User).options(selectinload(User.roles), selectinload(User.database_access).selectinload(UserDatabaseAccess.db)).where(User.id == current_user.id))
     user = result.scalar_one_or_none()
-    role_name = user.role.name if user and user.role else None
+    role_names = [r.name for r in user.roles] if user and user.roles else []
     
     allowed_dbs = []
     if user:
@@ -818,7 +855,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user), 
                 
     return {
         "username": current_user.username, 
-        "role": role_name,
+        "roles": role_names,
         "display_token": user.display_token,
         "display_sql": user.display_sql,
         "user_type": user.user_type,

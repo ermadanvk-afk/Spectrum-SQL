@@ -17,6 +17,9 @@ If any required column does not exist (and cannot be found in the previous query
 Return exactly:
 INSUFFICIENT_SCHEMA, don't assume column name by yourself.
 
+CRITICAL FUNCTION RULE: 
+- When calling functions, you MUST extract parameter values directly from the user's query and pass them positionally in the exact order specified, using NULL for unmentioned parameters and GETDATE() for unspecified dates.
+- Display all the columns of the functions without using 'select *'.
 STEP 5: Generate SQL.
 CRITICAL SYNTAX RULES:
 - You are writing T-SQL for SQL Server. You MUST NOT use `LIMIT` under any circumstances.

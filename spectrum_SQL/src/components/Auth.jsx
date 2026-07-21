@@ -34,7 +34,7 @@ function Auth({ onLoginSuccess }) {
       }
 
       if (data.access_token) {
-        onLoginSuccess(data.access_token, data.role, {
+        onLoginSuccess(data.access_token, data.roles, {
           display_token: data.display_token,
           display_sql: data.display_sql,
           user_type: data.user_type

@@ -49,9 +49,33 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             if list(ast.find_all(Star)):
                 raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
 
+            # Always extract tables for structure validation
+            extracted_tables = set()
+            for t in ast.find_all(Table):
+                name = t.name
+                if not name and t.this:
+                    name = getattr(t.this, 'name', '')
+                    if not name:
+                        inner = getattr(t.this, 'this', '')
+                        if isinstance(inner, str):
+                            name = inner
+                        elif hasattr(inner, 'name'):
+                            name = inner.name
+                if name:
+                    extracted_tables.add(str(name).lower())
+                    
+            # Also extract functions (e.g., from CROSS APPLY) which sqlglot may not classify as 'Table'
+            from sqlglot.expressions import Anonymous, Func
+            for f in ast.find_all(Anonymous, Func):
+                if hasattr(f, 'name') and f.name and f.name.lower().startswith('func_'):
+                    extracted_tables.add(f.name.lower())
+                    
+            # Hard Stop: Prevent joining functions with other tables (applies to all users)
+            if any(t.startswith('func_') for t in extracted_tables) and len(extracted_tables) > 1:
+                return (False, "AUTH_ERROR: You can check the information for the single item only.", retry_in_tokens, retry_out_tokens)
+                
             # Temporarily disabled role based checking
-            if False and allowed_access is not None:
-                extracted_tables = {t.name.lower() for t in ast.find_all(Table)}
+            if True and allowed_access is not None:
                 allowed_table_names = [a['table_name'].lower() for a in allowed_access]
                 
                 # Check tables

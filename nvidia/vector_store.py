@@ -56,7 +56,7 @@ def store_chunks_to_vector_db() -> None:
     queries_df = get_df("Sheet8")
     
     print("Building chunks...")
-    schema_chunks = build_table_chunks(schema_df)
+    schema_chunks = build_table_chunks(schema_df, rules_df)
     rule_chunks = build_business_rule_chunks(rules_df)
     query_chunks = build_sample_query_chunks(queries_df)
     
@@ -67,7 +67,7 @@ def store_chunks_to_vector_db() -> None:
         return
         
     # Prepare batch data
-    texts = [chunk["content"] for chunk in ALL_CHUNKS]
+    texts = [chunk.get("embedding_text", chunk["content"]) for chunk in ALL_CHUNKS]
     
     metadatas = []
     for chunk in ALL_CHUNKS:
@@ -77,6 +77,11 @@ def store_chunks_to_vector_db() -> None:
         }
         if "sql" in chunk:
             meta["sql"] = chunk["sql"]
+        if "llm_text" in chunk:
+            meta["llm_text"] = chunk["llm_text"]
+        if "category" in chunk:
+            meta["category"] = chunk["category"]
+            
         metadatas.append(meta)
     
     print(f"Generating embeddings for {len(ALL_CHUNKS)} chunks (Schema: {len(schema_chunks)}, Rules: {len(rule_chunks)}, Queries: {len(query_chunks)})...")

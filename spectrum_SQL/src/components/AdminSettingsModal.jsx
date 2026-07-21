@@ -11,7 +11,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    role: 'Purchase Manager',
+    roles: ['Purchase Manager'],
     display_token: false,
     display_sql: false,
     user_type: 2,
@@ -185,7 +185,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
     setFormData({
       username: user.username,
       password: '', // Blank by default, only update if typed
-      role: user.role || (roles.length > 0 ? roles[0].name : 'Purchase Manager'),
+      roles: user.roles || (roles.length > 0 ? [roles[0].name] : ['Purchase Manager']),
       display_token: user.display_token,
       display_sql: user.display_sql,
       user_type: user.user_type,
@@ -201,7 +201,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
     setFormData({
       username: '',
       password: '',
-      role: roles.length > 0 ? roles[0].name : 'Purchase Manager',
+      roles: roles.length > 0 ? [roles[0].name] : ['Purchase Manager'],
       display_token: false,
       display_sql: false,
       user_type: 2,
@@ -325,7 +325,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
               <thead>
                 <tr style={{ borderBottom: '1px solid #444', textAlign: 'left' }}>
                   <th style={{ padding: '12px 8px' }}>Username</th>
-                  <th style={{ padding: '12px 8px' }}>Role</th>
+                  <th style={{ padding: '12px 8px' }}>Roles</th>
                   <th style={{ padding: '12px 8px' }}>Type</th>
                   <th style={{ padding: '12px 8px' }}>Cost View</th>
                   <th style={{ padding: '12px 8px' }}>SQL View</th>
@@ -337,7 +337,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
                 {users.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid #333' }}>
                     <td style={{ padding: '12px 8px' }}>{u.username}</td>
-                    <td style={{ padding: '12px 8px' }}>{u.role || '-'}</td>
+                    <td style={{ padding: '12px 8px' }}>{u.roles && u.roles.length > 0 ? u.roles.join(', ') : '-'}</td>
                     <td style={{ padding: '12px 8px' }}>{u.user_type === 1 ? 'Admin' : 'General'}</td>
                     <td style={{ padding: '12px 8px' }}>
                       {u.display_token ? <Check size={16} color="#86efac" /> : <XCircle size={16} color="#fca5a5" />}
@@ -394,12 +394,28 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Role</label>
-              <select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Roles</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto' }}>
                 {roles.map(r => (
-                  <option key={r.name} value={r.name}>{r.name}</option>
+                  <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input 
+                      type="checkbox" 
+                      id={`role_${r.name}`} 
+                      checked={formData.roles.includes(r.name)}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setFormData(prev => ({
+                          ...prev,
+                          roles: isChecked 
+                            ? [...prev.roles, r.name]
+                            : prev.roles.filter(name => name !== r.name)
+                        }));
+                      }}
+                    />
+                    <label htmlFor={`role_${r.name}`} style={{ color: '#ccc', fontSize: '0.95rem' }}>{r.name}</label>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>

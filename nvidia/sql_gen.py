@@ -71,7 +71,7 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         history = []
         
     tables, initial_names, final_names = fetch_tables(user_query, top_k=8)
-    rules = fetch_business_rules(user_query, top_k=8)
+    rules = fetch_business_rules(user_query, relevant_tables=final_names, top_k_general=4)
     queries = fetch_sample_queries(user_query, top_k=3)
     
     # Log the RAG retrieval details using update_log_sync
@@ -155,7 +155,18 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]
-    
+    # ------------------------ printing in console-----------------------
+    # print("\n" + "="*80)
+    # print("=== SYSTEM INSTRUCTION ===")
+    # print("="*80)
+    # print(system_instruction)
+    # print("\n" + "="*80)
+    # print("=== FINAL USER PROMPT ===")
+    # print("="*80)
+    # print(prompt)
+    # print("="*80 + "\n")
+    # ------------------------ printing in console-----------------------
+
     print("\n[NVIDIA PIPELINE] Sending payload to Gemini Flash lite...")
     print(f"[NVIDIA PIPELINE] Waiting for response...")
     

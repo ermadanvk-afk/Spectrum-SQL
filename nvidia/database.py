@@ -70,25 +70,29 @@ async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
 
+class UserRole(Base):
+    __tablename__ = "user_roles"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    role_id = Column(Integer, ForeignKey("roles.id"), primary_key=True)
+
 class User(Base): # user model added
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String,unique=True,index=True,nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
     display_token = Column(Boolean, default=False)
     display_sql = Column(Boolean, default=False)
     user_type = Column(Integer, default=2) # 1 = Admin, 2 = General User
     is_active = Column(Boolean, default=True)
     
-    role = relationship("Role", back_populates="users")
+    roles = relationship("Role", secondary="user_roles", back_populates="users")
     database_access = relationship("UserDatabaseAccess", back_populates="user", cascade="all, delete")
 
 class Role(Base):
     __tablename__ = "roles"
     id = Column(Integer,primary_key=True, index=True,autoincrement=True)
     name = Column(String,unique=True,index=True,nullable = False)
-    users = relationship("User",back_populates="role")
+    users = relationship("User", secondary="user_roles", back_populates="roles")
     table_permissions = relationship("RoleTableAccess",back_populates="role",cascade="all, delete")
 
 class RoleTableAccess(Base):

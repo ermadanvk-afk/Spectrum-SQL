@@ -15,6 +15,9 @@ for role_name in config.get("roles", []):
     cursor.execute("INSERT OR IGNORE INTO roles (name) VALUES (?)", (role_name,))
 
 # 3. Insert the Access Mappings
+print("Clearing old access mappings...")
+cursor.execute("DELETE FROM role_table_access")
+
 print("Inserting Access Mappings...")
 for mapping in config.get("access_mapping", []):
     role_name = mapping["role"]

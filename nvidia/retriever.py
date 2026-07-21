@@ -2,7 +2,7 @@ import numpy as np
 # pyrefly: ignore [missing-import]
 from qdrant_client import QdrantClient
 # pyrefly: ignore [missing-import]
-from qdrant_client.models import Filter, FieldCondition, MatchValue, Prefetch, FusionQuery, Fusion, SparseVector
+from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny, Prefetch, FusionQuery, Fusion, SparseVector
 from embedder import embed_m3
 import os
 import json
@@ -85,7 +85,7 @@ def get_table_boosts(query: str) -> dict:
                 
     return matched_tables
 
-def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
+def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5, custom_filter: Filter = None):
     """Internal function to fetch chunks using Fast Hybrid Search (Dense + Sparse RRF)."""
     client = get_qdrant_client()
     
@@ -98,20 +98,27 @@ def _fetch_chunks(query: str, chunk_type: str, top_k: int = 5):
     vector_dense = dense_vecs[0]
     vector_sparse = sparse_vecs[0]
     
-    chunk_filter = Filter(
-        must=[
-            FieldCondition(
-                key="chunk_type",
-                match=MatchValue(value=chunk_type)
-            )
-        ]
-    )
+    must_conditions = [
+        FieldCondition(
+            key="chunk_type",
+            match=MatchValue(value=chunk_type)
+        )
+    ]
     
-    # if chunk_type == "table":
-    #     # fetch_k = 15
-    #     # top_k = 7
-    # else:
-    fetch_k = top_k
+    chunk_filter = Filter(must=must_conditions)
+    if custom_filter:
+        if custom_filter.must:
+            chunk_filter.must.extend(custom_filter.must)
+        if custom_filter.should:
+            chunk_filter.should = custom_filter.should
+        if custom_filter.must_not:
+            chunk_filter.must_not = custom_filter.must_not
+    
+    if chunk_type == "table":
+        fetch_k = 16
+        top_k = 8
+    else:
+        fetch_k = top_k
     
     # 1. Fast Hybrid Retrieval (Dense + Sparse RRF)
     search_response = client.query_points(
@@ -233,24 +240,47 @@ def fetch_tables(query: str, top_k: int = 5):
     results, initial_names, final_names = _fetch_chunks(query, chunk_type="table", top_k=top_k)
     for res in results:
         if hasattr(res, 'payload') and 'text' in res.payload:
-            # Extract table_name for evaluation if needed somewhere else
-            for line in res.payload['text'].split('\n'):
-                if line.strip().startswith("table_name :"):
-                    res.payload['table_name'] = line.split("table_name :")[1].strip()
-                    break
-            
-            # Filter out LLM-irrelevant context used for embeddings
-            filtered_lines = []
-            for line in res.payload['text'].split('\n'):
-                if not line.strip().startswith("supports :") and not line.strip().startswith("does not supports :"):
-                    filtered_lines.append(line)
-            res.payload['text'] = "\n".join(filtered_lines)
+            # Reassign text to clean llm_text for downstream tasks
+            if 'llm_text' in res.payload:
+                res.payload['text'] = res.payload['llm_text']
             
     return results, initial_names, final_names
-def fetch_business_rules(query: str, top_k: int = 5):
-    """Fetches top k business rules based on similarity."""
-    rules_ =  _fetch_chunks(query, chunk_type="business_rule", top_k=top_k)
-    return rules_
+
+def fetch_business_rules(query: str, relevant_tables: list = None, top_k_general: int = 5):
+    """Fetches business rules based on similarity. Pulls ALL rules for table-specific, and top-k for general."""
+    all_rules = []
+    
+    # 1. Fetch ALL Table-Specific Rules (Bypass Top-K)
+    if relevant_tables:
+        client = get_qdrant_client() # added for giving all rules
+        table_filter = Filter(
+            must=[
+                FieldCondition(key="chunk_type", match=MatchValue(value="business_rule")),
+                FieldCondition(key="category", match=MatchAny(any=relevant_tables))
+            ]
+        )
+        # Scroll pulls everything that matches the filter without vector math
+        res = client.scroll(
+            collection_name="schema_chunks",
+            scroll_filter=table_filter,
+            limit=1000  # High enough to get all rules
+        )
+        specific_rules = res[0]
+        all_rules.extend(specific_rules)
+        
+    # 2. Fetch Top-K General Rules (Still uses semantic search)
+    general_filter = Filter(
+        must=[
+            FieldCondition(
+                key="category",
+                match=MatchValue(value="general")
+            )
+        ]
+    )
+    general_rules = _fetch_chunks(query, chunk_type="business_rule", top_k=top_k_general, custom_filter=general_filter)
+    all_rules.extend(general_rules)
+    
+    return all_rules
 
 def fetch_sample_queries(query: str, top_k: int = 5):
     """Fetches top k sample queries based on similarity."""
@@ -282,11 +312,23 @@ if __name__ == "__main__":
                 
             print(f"\nProcessing query: '{query}'...")
             
-            tables, initial, final = fetch_tables(query, top_k=2)
+            tables, initial, final_names = fetch_tables(query, top_k=8)
             
-            print("\n--- EXACT CHUNKS SENT TO SQL_GEN.PY ---")
+            print("\n--- EXACT TABLE CHUNKS SENT TO LLM ---")
             for t in tables:
                 print(t.payload.get('text', ''))
+                print("---------------------------------------")
+                
+            print("\n--- FETCHING BUSINESS RULES ---")
+            print(f"Filtering rules for tables: {final_names} + 'general'")
+            
+            rules = fetch_business_rules(query, relevant_tables=final_names, top_k_general=3)
+            
+            print("\n--- EXACT BUSINESS RULES SENT TO LLM ---")
+            for r in rules:
+                category = r.payload.get('category', 'unknown')
+                print(f"[Category: {category}]")
+                print(r.payload.get('text', ''))
                 print("---------------------------------------")
             
         except KeyboardInterrupt:

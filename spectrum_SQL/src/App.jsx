@@ -7,7 +7,7 @@ import AdminSettingsModal from './components/AdminSettingsModal'
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-  const [userRole, setUserRole] = useState(null)
+  const [userRoles, setUserRoles] = useState([])
   const [userName, setUserName] = useState(null)
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -37,17 +37,19 @@ function App() {
       console.error('Logout failed', e)
     }
     setIsAuthenticated(false)
-    setUserRole(null)
+    setUserRoles([])
     setUserName(null)
     setMessages([])
     setAllChats([])
     setCurrentChatId(null)
+    setIsAnalysisEnabled(false)
+    setIsVisualAnalysisEnabled(false)
   }
 
-  const handleLoginSuccess = (tokenOrRole, possibleRole, perms, username, databases) => {
-    const role = possibleRole || tokenOrRole // Handle old and new Auth.jsx signatures
+  const handleLoginSuccess = (tokenOrRole, possibleRoles, perms, username, databases) => {
+    const roles = possibleRoles || tokenOrRole // Handle old and new Auth.jsx signatures
     setIsAuthenticated(true)
-    setUserRole(role || null)
+    setUserRoles(roles || [])
     if (perms) {
       setUserPermissions(perms)
     }
@@ -108,7 +110,7 @@ function App() {
         if (response.ok) {
           const data = await response.json()
           setIsAuthenticated(true)
-          setUserRole(data.role || null)
+          setUserRoles(data.roles || [])
           setUserName(data.username || null)
           setUserPermissions({
             display_token: data.display_token,
@@ -506,7 +508,7 @@ function App() {
         </div>
 
         {/* Role Badge */}
-        {userRole && (
+        {userRoles && userRoles.length > 0 && (
           <div className="sidebar-item" style={{
             marginTop: '8px',
             padding: '8px 16px',
@@ -535,7 +537,7 @@ function App() {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis'
               }}>
-                {userRole}
+                {userRoles.join(', ')}
               </span>
             </div>
           </div>
