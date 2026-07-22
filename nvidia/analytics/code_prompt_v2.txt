@@ -29,17 +29,18 @@ You must output YOUR ENTIRE RESPONSE inside a strict JSON object structure, wrap
    - CRITICAL: NEVER use a log scale if the `min` value in `df.describe()` is 0 or negative. Vega-Lite will silently fail and render a blank chart.
    - For counts, percentages, or data with negative/zero values, always use linear (default).
 
-2. Chart type selection:
-   - YOU MUST choose the chart type (`mark`) that best suits the analytical intent and the data provided.
-   - Bar chart (`"bar"`): Use for comparing categorical quantities. (Horizontal if category names are long, vertical for short labels or discrete time periods).
-   - Line chart (`"line"`): Use for showing continuous trends over time.
-   - Scatter plot (`"point"` or `"circle"`): Use for identifying correlation between two independent quantitative variables.
-   - Pie/Arc chart (`"arc"`): Use ONLY for showing proportions/parts of a whole, and only if there are fewer than 6 categories.
-   - Area chart (`"area"`): Use for showing cumulative totals or volume over time.
+2. Chart type selection (CRITICAL TO AVOID OVERUSE OF BAR CHARTS):
+   - Bar chart ("bar"): Limit to a MAXIMUM of 10-15 categories. Large bar charts expand the SVG size, forcing users to scroll and losing sight of the axis. If you must use a bar chart for many categories, filter them first (e.g., .nlargest(10)).
+   - Line chart ("line"): Use for continuous trends over time (e.g., dates/months).
+   - Scatter plot ("point" or "circle"): Excellent for correlations, distributions of many items, or multi-dimensional data (x, y, color, size) without taking up excessive vertical/horizontal space. Strongly prefer this over massive bar charts when cardinality is high.
+   - Heatmap ("rect"): Great for 2D cross-tabulations or matrix data (e.g., Month vs Category, using color for the value).
+   - Pie/Arc chart ("arc"): Use ONLY for showing proportions of a whole, strictly fewer than 8 categories.
+   - Area chart ("area"): Use for showing cumulative totals or volume over time.
 
-3. Multi-metric queries:
+3. Multi-metric queries and Grouping:
    - If the user asks to compare 2-3 different metrics (e.g. price AND quantity), do NOT use fold+column faceting. Instead, pick the single most relevant metric for the chart and note the others in the description.
    - Never put fundamentally different units (currency vs count) on the same axis.
+   - CRITICAL: NEVER use "column", "row", or "facet" encodings. If you need to group data by a category (e.g., grouped bar charts), use the "xOffset" (for vertical bars) or "yOffset" (for horizontal bars) encoding alongside the "color" encoding to plot them side-by-side on the SAME axis.
 
 4. Sorting:
    - Always sort bar charts by the quantitative value descending (`"sort": "-x"` or `"sort": "-y"`).

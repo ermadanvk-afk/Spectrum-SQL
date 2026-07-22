@@ -232,8 +232,8 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         flexDirection: 'column',
         gap: '16px',
         width: '100%',
-        maxWidth: view === 'list' ? '900px' : '450px',
-        maxHeight: '90vh',
+        maxWidth: '900px',
+        height: '85vh',
         position: 'relative',
         overflowY: 'auto'
       }}>
@@ -380,7 +380,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         )}
 
         {(view === 'create' || view === 'edit') && (
-          <form onSubmit={view === 'create' ? handleCreateUser : handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px' }}>
+          <form onSubmit={view === 'create' ? handleCreateUser : handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Username</label>
               <input type="text" required value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
@@ -525,7 +525,7 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         )}
 
         {(view === 'db_create' || view === 'db_edit') && (
-          <form onSubmit={view === 'db_create' ? handleCreateDatabase : handleUpdateDatabase} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px' }}>
+          <form onSubmit={view === 'db_create' ? handleCreateDatabase : handleUpdateDatabase} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Database Name</label>
               <input type="text" required value={dbFormData.name} onChange={(e) => setDbFormData({...dbFormData, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
