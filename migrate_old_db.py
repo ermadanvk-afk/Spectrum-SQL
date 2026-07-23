@@ -71,6 +71,58 @@ def migrate():
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_refresh_tokens_id ON refresh_tokens(id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS ix_refresh_tokens_token ON refresh_tokens(token)")
 
+    # 4. Update sessions table
+    print("--- Updating sessions ---")
+    alter_table_add_column(cursor, "sessions", "user_id INTEGER")
+
+    # 5. Update messages table
+    print("--- Updating messages ---")
+    alter_table_add_column(cursor, "messages", "db_id INTEGER")
+
+    # 6. Create new tables for DB master and user roles
+    print("--- Creating newer tables ---")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS db_master (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name VARCHAR NOT NULL UNIQUE,
+        connection_string VARCHAR NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_db_master_id ON db_master(id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS ix_db_master_name ON db_master(name)")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_database_access (
+        user_id INTEGER NOT NULL,
+        db_id INTEGER NOT NULL,
+        PRIMARY KEY (user_id, db_id),
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(db_id) REFERENCES db_master(id) ON DELETE CASCADE
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_roles (
+        user_id INTEGER NOT NULL,
+        role_id INTEGER NOT NULL,
+        PRIMARY KEY (user_id, role_id),
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE
+    )
+    """)
+
+    print("--- Migrating role_id from users to user_roles ---")
+    try:
+        cursor.execute("""
+        INSERT OR IGNORE INTO user_roles (user_id, role_id)
+        SELECT id, role_id FROM users WHERE role_id IS NOT NULL
+        """)
+        print("Migrated existing user roles from users table.")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
     conn.close()
     print("--- Migration complete! ---")
