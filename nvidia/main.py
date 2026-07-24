@@ -511,6 +511,83 @@ async def get_session_messages(session_id: str,current_user:User=Depends(get_cur
         
     return messages
 
+@app.get("/api/logs")
+async def get_system_logs(
+    start_date: str = None, 
+    end_date: str = None,
+    page: int = 1,
+    page_size: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.user_type != 1:
+        raise HTTPException(status_code=403, detail="Only Admins can view system logs.")
+    
+    from logger import SystemLog
+    from sqlalchemy import select, func
+    from database import Session as DBSession, User as DBUser
+    
+    try:
+        # Build the base query for counting
+        count_query = select(func.count()).select_from(SystemLog)
+        
+        # Build the base query for data
+        data_query = select(SystemLog, DBUser.username)\
+            .outerjoin(DBSession, SystemLog.session_id == DBSession.id)\
+            .outerjoin(DBUser, DBSession.user_id == DBUser.id)
+            
+        if start_date:
+            from datetime import datetime
+            try:
+                dt_start = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
+                count_query = count_query.where(SystemLog.timestamp >= dt_start)
+                data_query = data_query.where(SystemLog.timestamp >= dt_start)
+            except ValueError:
+                pass
+                
+        if end_date:
+            from datetime import datetime
+            try:
+                dt_end = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
+                count_query = count_query.where(SystemLog.timestamp <= dt_end)
+                data_query = data_query.where(SystemLog.timestamp <= dt_end)
+            except ValueError:
+                pass
+        
+        total_count = await db.scalar(count_query)
+        
+        # Pagination
+        offset = (page - 1) * page_size
+        data_query = data_query.order_by(SystemLog.timestamp.desc()).offset(offset).limit(page_size)
+        
+        result_rows = await db.execute(data_query)
+        rows = result_rows.all()
+        
+        # Format output
+        result = []
+        from datetime import timedelta
+        for log, username in rows:
+            result.append({
+                "id": log.id,
+                "date": (log.timestamp + timedelta(hours=5, minutes=30)).isoformat() if log.timestamp else None,
+                "user": username or "Unknown",
+                "question": log.user_query,
+                "rating": log.is_useful,
+                "comment": log.user_comment
+            })
+            
+        return {
+            "data": result,
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total_count + page_size - 1) // page_size
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Failed to fetch logs")
+
 @app.put("/api/messages/{message_id}")
 async def update_message(message_id: int, request_model: MessageUpdateRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Message).where(Message.id == message_id))

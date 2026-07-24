@@ -13,9 +13,9 @@ EXCEPTION FOR FOLLOW-UPS: If the user's query is a direct follow-up to the previ
 
 No assumption on joining tables, if they don't have FK relationships.
 
-If any required column does not exist (and cannot be found in the previous query's SQL):
+If any asked question cannot be answered with context present(and cannot be found in the previous query's SQL):
 Return exactly:
-INSUFFICIENT_SCHEMA, don't assume column name by yourself.
+just write the sql as SELECT NULL AS Message WHERE 1 = 0;
 
 CRITICAL FUNCTION RULE: 
 - When calling functions, you MUST extract parameter values directly from the user's query and pass them positionally in the exact order specified, using NULL for unmentioned parameters and GETDATE() for unspecified dates.

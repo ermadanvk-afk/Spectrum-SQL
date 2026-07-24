@@ -56,7 +56,7 @@ def execute_query(sql: str, connection_string: str = None, connection=None, time
             execution_status="FAILED"
         )
         log_error_sync("execute", "DB_EXECUTION_ERROR", e, "Error executing SQL on external DB", log_id=log_id, details={"sql": sql})
-        raise RuntimeError(f"Database execution error: {e}\n\nFAILED SQL:\n{sql}")
+        raise RuntimeError("We encountered an issue while retrieving your data from the database. This might be due to a complex query taking too long or a temporary connection issue. Please try again or refine your query.")
 
 if __name__ == "__main__":
     import os

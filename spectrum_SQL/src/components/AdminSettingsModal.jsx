@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Shield, Edit2, Check, XCircle } from 'lucide-react';
+import { X, UserPlus, Shield, Edit2, Check, XCircle, Users, Database, FileText, ArrowLeft } from 'lucide-react';
 
 export default function AdminSettingsModal({ onClose, apiFetch }) {
+  const [showMainMenu, setShowMainMenu] = useState(true);
+  const [activeTab, setActiveTab] = useState('user_settings');
   const [view, setView] = useState('list'); // 'list', 'create', 'edit'
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([{ name: 'Purchase Manager' }]);
   const [databases, setDatabases] = useState([]);
   const [status, setStatus] = useState({ message: '', error: '' });
+  
+  const [logs, setLogs] = useState([]);
+  const [logsPagination, setLogsPagination] = useState({ page: 1, total_pages: 1, total: 0 });
+  const [logDates, setLogDates] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return { start: d.toISOString().split('T')[0], end: new Date().toISOString().split('T')[0] };
+  });
+
   
   const [formData, setFormData] = useState({
     username: '',
@@ -68,6 +79,28 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
       console.error('Failed to fetch databases', e);
     }
   };
+
+  const fetchLogs = async (page = 1) => {
+    try {
+      const params = new URLSearchParams({
+        page: page,
+        page_size: 15,
+        start_date: logDates.start ? new Date(logDates.start).toISOString() : '',
+        end_date: logDates.end ? new Date(logDates.end + 'T23:59:59.999Z').toISOString() : ''
+      });
+      const res = await apiFetch(`/api/logs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.data);
+        setLogsPagination({ page: data.page, total_pages: data.total_pages, total: data.total });
+      } else {
+        setStatus({ error: 'Failed to fetch logs', message: '' });
+      }
+    } catch (e) {
+      setStatus({ error: 'Error fetching logs', message: '' });
+    }
+  };
+
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -225,57 +258,62 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
     }}>
       <div style={{
         backgroundColor: '#1e1e1e',
-        padding: '32px',
-        borderRadius: '12px',
-        border: '1px solid #333',
+        padding: showMainMenu ? '32px' : '24px',
+        borderRadius: showMainMenu ? '12px' : '0',
+        border: showMainMenu ? '1px solid #333' : 'none',
         display: 'flex',
         flexDirection: 'column',
         gap: '16px',
-        width: '100%',
-        maxWidth: '900px',
-        height: '85vh',
+        width: showMainMenu ? '100%' : '100vw',
+        maxWidth: showMainMenu ? '900px' : '100vw',
+        height: showMainMenu ? '85vh' : '100vh',
+        boxSizing: 'border-box',
         position: 'relative',
-        overflowY: 'auto'
+        overflowY: 'hidden',
+        transition: 'all 0.3s ease'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #333', paddingBottom: '16px', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Shield size={28} style={{ color: '#d97757' }} />
+            {showMainMenu ? (
+              <Shield size={28} style={{ color: '#d97757' }} />
+            ) : (
+              <button 
+                onClick={() => {
+                  if (activeTab === 'user_settings' && (view === 'create' || view === 'edit')) {
+                    setView('list');
+                    setStatus({ message: '', error: '' });
+                  } else if (activeTab === 'db_settings' && (view === 'db_create' || view === 'db_edit')) {
+                    setView('db_list');
+                    setStatus({ message: '', error: '' });
+                  } else {
+                    setShowMainMenu(true);
+                  }
+                }} 
+                style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
+              >
+                <ArrowLeft size={24} />
+              </button>
+            )}
             <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>
-              {view === 'list' && 'User Master'}
-              {view === 'create' && 'Create New User'}
-              {view === 'edit' && 'Edit User'}
-              {view === 'db_list' && 'Database Master'}
-              {view === 'db_create' && 'Create New Database'}
-              {view === 'db_edit' && 'Edit Database'}
+              {showMainMenu ? 'Settings' : (
+                activeTab === 'user_settings' ? 'Settings > User Settings' :
+                activeTab === 'db_settings' ? 'Settings > Database Configs' :
+                'Settings > System Logs'
+              )}
             </h2>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            {view === 'list' && (
-              <>
-                <button 
-                  onClick={() => { setView('db_list'); setStatus({ message: '', error: '' }); }}
-                  style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #444', backgroundColor: 'transparent', color: '#ccc', cursor: 'pointer' }}
-                >
-                  Manage Databases
-                </button>
+            {!showMainMenu && activeTab === 'user_settings' && view === 'list' && (
                 <button 
                   onClick={openCreate}
                   style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <UserPlus size={16} /> New User
                 </button>
-              </>
             )}
             
-            {view === 'db_list' && (
-              <>
-                <button 
-                  onClick={() => { setView('list'); setStatus({ message: '', error: '' }); }}
-                  style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #444', backgroundColor: 'transparent', color: '#ccc', cursor: 'pointer' }}
-                >
-                  Manage Users
-                </button>
+            {!showMainMenu && activeTab === 'db_settings' && view === 'db_list' && (
                 <button 
                   onClick={() => {
                     setDbFormData({ name: '', connection_string: '' });
@@ -286,30 +324,13 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
                 >
                   New Database
                 </button>
-              </>
             )}
 
-            {(view === 'create' || view === 'edit') && (
-              <button 
-                onClick={() => { setView('list'); setStatus({ message: '', error: '' }); }}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #444', backgroundColor: 'transparent', color: '#ccc', cursor: 'pointer' }}
-              >
-                Back to List
-              </button>
-            )}
-            
-            {(view === 'db_create' || view === 'db_edit') && (
-              <button 
-                onClick={() => { setView('db_list'); setStatus({ message: '', error: '' }); }}
-                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #444', backgroundColor: 'transparent', color: '#ccc', cursor: 'pointer' }}
-              >
-                Back to Databases
-              </button>
-            )}
+
             <button 
-              onClick={onClose}
+              onClick={() => showMainMenu ? onClose() : setShowMainMenu(true)}
               style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}
-              title="Close"
+              title={showMainMenu ? "Close" : "Back"}
             >
               <X size={24} />
             </button>
@@ -319,10 +340,64 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         {status.error && <div style={{ padding: '10px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#fca5a5', borderRadius: '6px', fontSize: '0.85rem' }}>{status.error}</div>}
         {status.message && <div style={{ padding: '10px', backgroundColor: 'rgba(34,197,94,0.1)', color: '#86efac', borderRadius: '6px', fontSize: '0.85rem' }}>{status.message}</div>}
 
+        {showMainMenu ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '24px', flex: 1, padding: '24px 0', alignContent: 'center' }}>
+            <button
+              onClick={() => { setActiveTab('user_settings'); setView('list'); setShowMainMenu(false); setStatus({ message: '', error: '' }); }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
+                backgroundColor: 'rgba(217, 119, 87, 0.1)', border: '1px solid rgba(217, 119, 87, 0.3)', borderRadius: '12px',
+                padding: '32px 16px', cursor: 'pointer', color: '#fff', transition: 'all 0.2s ease',
+                height: '100%', minHeight: '220px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.2)'; e.currentTarget.style.borderColor = '#d97757'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.1)'; e.currentTarget.style.borderColor = 'rgba(217, 119, 87, 0.3)'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <Users size={48} color="#d97757" />
+              <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>User Settings</span>
+              <span style={{ fontSize: '0.85rem', color: '#aaa', textAlign: 'center' }}>Manage users, roles, and access</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('db_settings'); setView('db_list'); setShowMainMenu(false); setStatus({ message: '', error: '' }); fetchDatabases(); }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
+                backgroundColor: 'rgba(217, 119, 87, 0.1)', border: '1px solid rgba(217, 119, 87, 0.3)', borderRadius: '12px',
+                padding: '32px 16px', cursor: 'pointer', color: '#fff', transition: 'all 0.2s ease',
+                height: '100%', minHeight: '220px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.2)'; e.currentTarget.style.borderColor = '#d97757'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.1)'; e.currentTarget.style.borderColor = 'rgba(217, 119, 87, 0.3)'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <Database size={48} color="#d97757" />
+              <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>Database Configs</span>
+              <span style={{ fontSize: '0.85rem', color: '#aaa', textAlign: 'center' }}>Add or delete connections</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('logs'); setShowMainMenu(false); fetchLogs(1); setStatus({ message: '', error: '' }); }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px',
+                backgroundColor: 'rgba(217, 119, 87, 0.1)', border: '1px solid rgba(217, 119, 87, 0.3)', borderRadius: '12px',
+                padding: '32px 16px', cursor: 'pointer', color: '#fff', transition: 'all 0.2s ease',
+                height: '100%', minHeight: '220px'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.2)'; e.currentTarget.style.borderColor = '#d97757'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(217, 119, 87, 0.1)'; e.currentTarget.style.borderColor = 'rgba(217, 119, 87, 0.3)'; e.currentTarget.style.transform = 'none'; }}
+            >
+              <FileText size={48} color="#d97757" />
+              <span style={{ fontSize: '1.2rem', fontWeight: 600 }}>System Logs</span>
+              <span style={{ fontSize: '0.85rem', color: '#aaa', textAlign: 'center' }}>View query logs and feedback</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'user_settings' && (
+              <>
+
+
         {view === 'list' && (
-          <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', marginTop: '16px', border: '1px solid #333', borderRadius: '8px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ccc' }}>
-              <thead>
+              <thead style={{ position: 'sticky', top: 0, backgroundColor: '#222', zIndex: 1 }}>
                 <tr style={{ borderBottom: '1px solid #444', textAlign: 'left' }}>
                   <th style={{ padding: '12px 8px' }}>Username</th>
                   <th style={{ padding: '12px 8px' }}>Roles</th>
@@ -380,104 +455,117 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         )}
 
         {(view === 'create' || view === 'edit') && (
-          <form onSubmit={view === 'create' ? handleCreateUser : handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Username</label>
-              <input type="text" required value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
-            </div>
-            
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>
-                Password {view === 'edit' && <span style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>(Leave blank to keep current)</span>}
-              </label>
-              <input type="password" required={view === 'create'} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
-            </div>
+          <div style={{ flex: 1, overflowY: 'auto', width: '100%', paddingRight: '16px' }}>
+            <form onSubmit={view === 'create' ? handleCreateUser : handleUpdateUser} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginTop: '8px', width: '100%' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Username</label>
+                  <input type="text" required value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>
+                    Password {view === 'edit' && <span style={{ fontSize: '0.8rem', fontStyle: 'italic' }}>(Leave blank to keep current)</span>}
+                  </label>
+                  <input type="password" required={view === 'create'} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Roles</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto' }}>
-                {roles.map(r => (
-                  <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="checkbox" 
-                      id={`role_${r.name}`} 
-                      checked={formData.roles.includes(r.name)}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setFormData(prev => ({
-                          ...prev,
-                          roles: isChecked 
-                            ? [...prev.roles, r.name]
-                            : prev.roles.filter(name => name !== r.name)
-                        }));
-                      }}
-                    />
-                    <label htmlFor={`role_${r.name}`} style={{ color: '#ccc', fontSize: '0.95rem' }}>{r.name}</label>
-                  </div>
-                ))}
+                <div>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Access Type</label>
+                  <select value={formData.user_type} onChange={(e) => setFormData({...formData, user_type: parseInt(e.target.value)})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }}>
+                    <option value={2}>General User</option>
+                    <option value={1}>Admin</option>
+                  </select>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                  <input type="checkbox" id="display_token" checked={formData.display_token} onChange={(e) => setFormData({...formData, display_token: e.target.checked})} />
+                  <label htmlFor="display_token" style={{ color: '#ccc', fontSize: '0.95rem' }}>Allow viewing Tokens & Cost</label>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input type="checkbox" id="display_sql" checked={formData.display_sql} onChange={(e) => setFormData({...formData, display_sql: e.target.checked})} />
+                  <label htmlFor="display_sql" style={{ color: '#ccc', fontSize: '0.95rem' }}>Allow viewing Generated SQL</label>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', marginTop: '8px' }}>
+                  <input type="checkbox" id="is_active" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} />
+                  <label htmlFor="is_active" style={{ color: '#ccc', fontSize: '0.95rem', fontWeight: 600 }}>Active Account</label>
+                  <span style={{ color: '#888', fontSize: '0.8rem', marginLeft: 'auto' }}>If unchecked, user cannot log in</span>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Access Type</label>
-              <select value={formData.user_type} onChange={(e) => setFormData({...formData, user_type: parseInt(e.target.value)})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }}>
-                <option value={2}>General User</option>
-                <option value={1}>Admin</option>
-              </select>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-              <input type="checkbox" id="display_token" checked={formData.display_token} onChange={(e) => setFormData({...formData, display_token: e.target.checked})} />
-              <label htmlFor="display_token" style={{ color: '#ccc', fontSize: '0.95rem' }}>Allow viewing Tokens & Cost</label>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input type="checkbox" id="display_sql" checked={formData.display_sql} onChange={(e) => setFormData({...formData, display_sql: e.target.checked})} />
-              <label htmlFor="display_sql" style={{ color: '#ccc', fontSize: '0.95rem' }}>Allow viewing Generated SQL</label>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', marginTop: '8px' }}>
-              <input type="checkbox" id="is_active" checked={formData.is_active} onChange={(e) => setFormData({...formData, is_active: e.target.checked})} />
-              <label htmlFor="is_active" style={{ color: '#ccc', fontSize: '0.95rem', fontWeight: 600 }}>Active Account</label>
-              <span style={{ color: '#888', fontSize: '0.8rem', marginLeft: 'auto' }}>If unchecked, user cannot log in</span>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Database Access</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', maxHeight: '150px', overflowY: 'auto' }}>
-                {databases.map(db => (
-                  <div key={db.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input 
-                      type="checkbox" 
-                      id={`db_${db.id}`} 
-                      checked={formData.allowed_databases.includes(db.id)}
-                      onChange={(e) => {
-                        const isChecked = e.target.checked;
-                        setFormData(prev => ({
-                          ...prev,
-                          allowed_databases: isChecked 
-                            ? [...prev.allowed_databases, db.id]
-                            : prev.allowed_databases.filter(id => id !== db.id)
-                        }));
-                      }}
-                    />
-                    <label htmlFor={`db_${db.id}`} style={{ color: '#ccc', fontSize: '0.95rem' }}>{db.name}</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Roles</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', flex: 1, overflowY: 'auto', minHeight: '150px' }}>
+                    {roles.map(r => (
+                      <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input 
+                          type="checkbox" 
+                          id={`role_${r.name}`} 
+                          checked={formData.roles.includes(r.name)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setFormData(prev => ({
+                              ...prev,
+                              roles: isChecked 
+                                ? [...prev.roles, r.name]
+                                : prev.roles.filter(name => name !== r.name)
+                            }));
+                          }}
+                        />
+                        <label htmlFor={`role_${r.name}`} style={{ color: '#ccc', fontSize: '0.95rem' }}>{r.name}</label>
+                      </div>
+                    ))}
                   </div>
-                ))}
-                {databases.length === 0 && <span style={{ color: '#888', fontSize: '0.85rem' }}>No databases configured.</span>}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Database Access</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '6px', flex: 1, overflowY: 'auto', minHeight: '150px' }}>
+                    {databases.map(db => (
+                      <div key={db.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input 
+                          type="checkbox" 
+                          id={`db_${db.id}`} 
+                          checked={formData.allowed_databases.includes(db.id)}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setFormData(prev => ({
+                              ...prev,
+                              allowed_databases: isChecked 
+                                ? [...prev.allowed_databases, db.id]
+                                : prev.allowed_databases.filter(id => id !== db.id)
+                            }));
+                          }}
+                        />
+                        <label htmlFor={`db_${db.id}`} style={{ color: '#ccc', fontSize: '0.95rem' }}>{db.name}</label>
+                      </div>
+                    ))}
+                    {databases.length === 0 && <span style={{ color: '#888', fontSize: '0.85rem' }}>No databases configured.</span>}
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <button type="submit" style={{ padding: '12px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '16px' }}>
-              {view === 'create' ? 'Create User' : 'Save Changes'}
-            </button>
-          </form>
+
+              <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="submit" style={{ padding: '12px 24px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
+                  {view === 'create' ? 'Create User' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
         )}
+              </>
+            )}
 
+            {activeTab === 'db_settings' && (
+              <>
         {view === 'db_list' && (
-          <div style={{ overflowX: 'auto', marginTop: '16px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', marginTop: '16px', border: '1px solid #333', borderRadius: '8px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ccc' }}>
-              <thead>
+              <thead style={{ position: 'sticky', top: 0, backgroundColor: '#222', zIndex: 1 }}>
                 <tr style={{ borderBottom: '1px solid #444', textAlign: 'left' }}>
                   <th style={{ padding: '12px 8px' }}>Database Name</th>
                   <th style={{ padding: '12px 8px' }}>Connection String</th>
@@ -525,7 +613,8 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
         )}
 
         {(view === 'db_create' || view === 'db_edit') && (
-          <form onSubmit={view === 'db_create' ? handleCreateDatabase : handleUpdateDatabase} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
+          <div style={{ flex: 1, overflowY: 'auto', width: '100%', paddingRight: '16px' }}>
+            <form onSubmit={view === 'db_create' ? handleCreateDatabase : handleUpdateDatabase} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', maxWidth: '600px', margin: '0 auto', width: '100%' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.9rem', color: '#aaa' }}>Database Name</label>
               <input type="text" required value={dbFormData.name} onChange={(e) => setDbFormData({...dbFormData, name: e.target.value})} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff', boxSizing: 'border-box' }} />
@@ -539,7 +628,98 @@ export default function AdminSettingsModal({ onClose, apiFetch }) {
             <button type="submit" style={{ padding: '12px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer', marginTop: '16px' }}>
               {view === 'db_create' ? 'Create Database' : 'Save Changes'}
             </button>
-          </form>
+            </form>
+          </div>
+        )}
+              </>
+            )}
+
+            {activeTab === 'logs' && (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ color: '#aaa', fontSize: '0.9rem' }}>Start Date</label>
+                <input 
+                  type="date" 
+                  value={logDates.start} 
+                  onChange={e => setLogDates(prev => ({ ...prev, start: e.target.value }))}
+                  style={{ padding: '8px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ color: '#aaa', fontSize: '0.9rem' }}>End Date</label>
+                <input 
+                  type="date" 
+                  value={logDates.end} 
+                  onChange={e => setLogDates(prev => ({ ...prev, end: e.target.value }))}
+                  style={{ padding: '8px', borderRadius: '6px', border: '1px solid #333', backgroundColor: '#0d0d0d', color: '#fff' }}
+                />
+              </div>
+              <button 
+                onClick={() => fetchLogs(1)}
+                style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#d97757', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Fetch Logs
+              </button>
+            </div>
+            
+            <div style={{ flex: 1, overflowY: 'auto', border: '1px solid #333', borderRadius: '8px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', color: '#ccc', fontSize: '0.9rem' }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#222', zIndex: 1 }}>
+                  <tr style={{ borderBottom: '1px solid #444', textAlign: 'left' }}>
+                    <th style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>Date</th>
+                    <th style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>User</th>
+                    <th style={{ padding: '12px 8px' }}>Question</th>
+                    <th style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>Rating</th>
+                    <th style={{ padding: '12px 8px' }}>Comment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map(log => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid #333' }}>
+                      <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{log.date ? new Date(log.date).toLocaleString() : '-'}</td>
+                      <td style={{ padding: '12px 8px' }}>{log.user}</td>
+                      <td style={{ padding: '12px 8px' }}>{log.question || '-'}</td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>{log.rating === true ? '👍' : (log.rating === false ? '👎' : '-')}</td>
+                      <td style={{ padding: '12px 8px' }}>{log.comment || '-'}</td>
+                    </tr>
+                  ))}
+                  {logs.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: '#888' }}>
+                        No logs found in this date range.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
+              <div style={{ color: '#888', fontSize: '0.9rem' }}>
+                Showing {logs.length} of {logsPagination.total} logs
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  disabled={logsPagination.page <= 1}
+                  onClick={() => fetchLogs(logsPagination.page - 1)}
+                  style={{ padding: '6px 12px', borderRadius: '4px', border: '1px solid #444', backgroundColor: 'transparent', color: logsPagination.page <= 1 ? '#555' : '#ccc', cursor: logsPagination.page <= 1 ? 'not-allowed' : 'pointer' }}
+                >
+                  Prev
+                </button>
+                <span style={{ color: '#ccc', fontSize: '0.9rem' }}>Page {logsPagination.page} of {Math.max(1, logsPagination.total_pages)}</span>
+                <button
+                  disabled={logsPagination.page >= logsPagination.total_pages}
+                  onClick={() => fetchLogs(logsPagination.page + 1)}
+                  style={{ padding: '6px 12px', borderRadius: '4px', border: '1px solid #444', backgroundColor: 'transparent', color: logsPagination.page >= logsPagination.total_pages ? '#555' : '#ccc', cursor: logsPagination.page >= logsPagination.total_pages ? 'not-allowed' : 'pointer' }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+          </>
         )}
       </div>
     </div>

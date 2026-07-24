@@ -29,6 +29,21 @@ function App() {
   const scrollRef = useRef(null)
   const abortControllerRef = useRef(null)
   const isSwitchingChatRef = useRef(false)
+  const dbDropdownRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dbDropdownRef.current && !dbDropdownRef.current.contains(event.target)) {
+        setIsDbDropdownOpen(false)
+      }
+    }
+    if (isDbDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [isDbDropdownOpen])
 
   const handleLogout = async () => {
     try {
@@ -628,7 +643,7 @@ function App() {
             onClick={() => setAdminModalOpen(true)}
           >
             <Settings size={18} className="sidebar-icon" />
-            <span className="sidebar-text">Users Settings</span>
+            <span className="sidebar-text">Settings</span>
           </div>
         )}
 
@@ -651,7 +666,7 @@ function App() {
       {/* Main Content Area */}
       <main className="main-content" style={{ position: 'relative' }}>
         {isAuthenticated && allowedDatabases.length > 0 && (
-          <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 100 }}>
+          <div ref={dbDropdownRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 100 }}>
             <div 
               style={{ 
                 backgroundColor: 'rgba(30, 30, 30, 0.8)', 

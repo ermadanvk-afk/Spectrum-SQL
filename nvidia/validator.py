@@ -18,10 +18,6 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
     if sql in ("UNSAFE_QUERY_DETECTED", "INSUFFICIENT_CONTEXT"):
         return (False, sql, retry_in_tokens, retry_out_tokens)
         
-    keywords = ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE"]
-    if any(keyword in sql.upper() for keyword in keywords):
-        return (False, "UNSAFE_QUERY_DETECTED", retry_in_tokens, retry_out_tokens)
-        
     current_sql = sanitize_sql(sql)
     
     # Load environment variables for DB connection
@@ -39,12 +35,15 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             
             # 1.5. SQLGlot RBAC and Star Ban
             import sqlglot
-            from sqlglot.expressions import Star, Table, Column
+            from sqlglot.expressions import Star, Table, Column, Select
             
             try:
                 ast = sqlglot.parse_one(current_sql, dialect="tsql")
             except Exception as parse_err:
                 raise Exception(f"SQL parsing error: {parse_err}")
+                
+            if not isinstance(ast, Select):
+                raise Exception("UNSAFE_QUERY_DETECTED: Only SELECT statements are allowed.")
                 
             if list(ast.find_all(Star)):
                 raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
@@ -72,7 +71,7 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                     
             # Hard Stop: Prevent joining functions with other tables (applies to all users)
             if any(t.startswith('func_') for t in extracted_tables) and len(extracted_tables) > 1:
-                return (False, "AUTH_ERROR: You can check the information for the single item only.", retry_in_tokens, retry_out_tokens)
+                return (False, "AUTH_ERROR: Joins in queries using functions are prohibited, please try to ask in different way.", retry_in_tokens, retry_out_tokens)
                 
             # Temporarily disabled role based checking
             if True and allowed_access is not None:
@@ -122,6 +121,9 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             )
             return (True, current_sql, retry_in_tokens, retry_out_tokens)
         except Exception as e:
+            print(f"\n[DEBUG VALIDATION FAILED] Exception: {e}\n")
+            with open("validation_error_log.txt", "w") as f:
+                f.write(str(e))
             if attempt < max_retries:
                 error_message = str(e)
                 retry_prompt = f"{user_query}\nThe following SQL has an error: {error_message}\nFix it and return only the corrected SQL."
