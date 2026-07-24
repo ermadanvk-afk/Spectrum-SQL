@@ -8,15 +8,14 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
   const [summary, setSummary] = useState(initialAnalysis?.summary || '');
   const [tokenUsage, setTokenUsage] = useState(initialAnalysis?.tokenUsage || 0);
   const [errorMsg, setErrorMsg] = useState('');
-  
+
   const bottomRef = useRef(null);
 
   useEffect(() => {
     // If we already have the initial analysis cached in the global messages state, do not re-fetch.
     if (initialAnalysis) return;
-    
-    // If this is a historical message loaded from localStorage (e.g. on page reload), 
-    // and it doesn't have an analysis, do not auto-fetch. Wait for user to click 'Run Analysis'.
+
+    // If this is a historical message, and it doesn't have an analysis, do not auto-fetch. Wait for user to click 'Run Analysis'.
     if (isHistorical && status === 'idle') return;
 
     let isMounted = true;
@@ -25,48 +24,67 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
     const fetchAnalysis = async () => {
       try {
         if (status === 'idle') setStatus('generating_code');
-        const response = await fetch('/api/analyze', {
+        let response = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ query, data, message_id: messageId }),
           signal: abortController.signal
         });
+
+        if (response.status === 401) {
+          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+          if (refreshRes.ok) {
+            response = await fetch('/api/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ query, data, message_id: messageId }),
+              signal: abortController.signal
+            });
+          } else {
+            window.dispatchEvent(new Event('sessionExpired'));
+            throw new Error("SESSION_EXPIRED");
+          }
+        }
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const payload = await response.json();
-        
+
         if (payload.status === 'error') {
-            if (isMounted) {
-              setStatus('error');
-              setErrorMsg(payload.content);
-            }
-            return;
+          if (isMounted) {
+            setStatus('error');
+            setErrorMsg(payload.content);
+          }
+          return;
         }
 
         if (isMounted) {
-            setCode(payload.code || '');
-            setSummary(payload.summary || '');
-            setTokenUsage(payload.tokenUsage || 0);
-            setStatus('done');
-            
-            if (onComplete) {
-              onComplete({
-                code: payload.code || '',
-                summary: payload.summary || '',
-                tokenUsage: payload.tokenUsage || 0
-              });
-            }
+          setCode(payload.code || '');
+          setSummary(payload.summary || '');
+          setTokenUsage(payload.tokenUsage || 0);
+          setStatus('done');
+
+          if (onComplete) {
+            onComplete({
+              code: payload.code || '',
+              summary: payload.summary || '',
+              tokenUsage: payload.tokenUsage || 0
+            });
+          }
         }
 
-      } catch (err) {
-        if (err.name !== 'AbortError' && isMounted) {
-          setStatus('error');
-          setErrorMsg(err.message);
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error("Analysis Error:", error);
+          if (error.message !== "SESSION_EXPIRED") {
+             setErrorMsg(error.message || "Failed to generate analysis.");
+          }
         }
-      }
+      } finally { };
     };
 
     fetchAnalysis();
@@ -83,6 +101,8 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
     }
   }, [code, status]);
 
+  if (status === 'error') return null;
+
   if (status === 'done' || status === 'generating_summary') {
     return (
       <div className="analysis-panel summary-view" style={{ position: 'relative' }}>
@@ -91,7 +111,7 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
           <span>Analytical Summary</span>
         </div>
         <div className="analysis-content summary-content">
-          {summary ? <ReactMarkdown>{summary}</ReactMarkdown> : <span style={{opacity: 0.5}}>Generating summary...</span>}
+          {summary ? <ReactMarkdown>{summary}</ReactMarkdown> : <span style={{ opacity: 0.5 }}>Generating summary...</span>}
         </div>
         {tokenUsage > 0 && (
           <div style={{
@@ -115,13 +135,13 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
       <div className="analysis-header">
         <TerminalSquare size={16} />
         <span>Execute Python code</span>
-        {status === 'executing' && <Loader2 size={14} className="spin-icon" style={{marginLeft: 'auto'}} />}
+        {status === 'executing' && <Loader2 size={14} className="spin-icon" style={{ marginLeft: 'auto' }} />}
       </div>
       <div className="analysis-content code-content">
         {status === 'idle' && isHistorical ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 16px', opacity: 0.8 }}>
             <div style={{ marginBottom: '12px', fontSize: '0.9rem' }}>Analytical summary is missing or failed previously.</div>
-            <button 
+            <button
               onClick={() => setStatus('generating_code')}
               style={{
                 background: 'var(--accent)',
@@ -150,11 +170,6 @@ const AnalysisPanel = ({ query, data, initialAnalysis, onComplete, isHistorical,
         {status === 'executing' && (
           <div className="execution-status">
             Executing code locally...
-          </div>
-        )}
-        {status === 'error' && (
-          <div className="error-status">
-            {errorMsg}
           </div>
         )}
       </div>

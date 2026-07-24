@@ -3,7 +3,7 @@ import os
 
 import sqlfluff
 from sql_gen import generate_sql
-from logger import update_log_sync, log_error_sync
+from logger import update_log_sync_by_id, log_error_sync
 
 import re
 
@@ -11,16 +11,12 @@ def sanitize_sql(sql: str) -> str:
     sql = sql.replace("≥", ">=").replace("≤", "<=")
     return sql
 
-async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, message_id: int = None, allowed_access: list = None) -> tuple[bool, str, int, int]:
+async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries: int = 2, log_id: int = None, allowed_access: list = None) -> tuple[bool, str, int, int]:
     retry_in_tokens = 0
     retry_out_tokens = 0
     
     if sql in ("UNSAFE_QUERY_DETECTED", "INSUFFICIENT_CONTEXT"):
         return (False, sql, retry_in_tokens, retry_out_tokens)
-        
-    keywords = ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE"]
-    if any(keyword in sql.upper() for keyword in keywords):
-        return (False, "UNSAFE_QUERY_DETECTED", retry_in_tokens, retry_out_tokens)
         
     current_sql = sanitize_sql(sql)
     
@@ -39,18 +35,46 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             
             # 1.5. SQLGlot RBAC and Star Ban
             import sqlglot
-            from sqlglot.expressions import Star, Table, Column
+            from sqlglot.expressions import Star, Table, Column, Select
             
             try:
                 ast = sqlglot.parse_one(current_sql, dialect="tsql")
             except Exception as parse_err:
                 raise Exception(f"SQL parsing error: {parse_err}")
                 
+            if not isinstance(ast, Select):
+                raise Exception("UNSAFE_QUERY_DETECTED: Only SELECT statements are allowed.")
+                
             if list(ast.find_all(Star)):
                 raise Exception("Do not use SELECT *. Please explicitly list the specific columns you need from the tables.")
 
-            if allowed_access is not None:
-                extracted_tables = {t.name.lower() for t in ast.find_all(Table)}
+            # Always extract tables for structure validation
+            extracted_tables = set()
+            for t in ast.find_all(Table):
+                name = t.name
+                if not name and t.this:
+                    name = getattr(t.this, 'name', '')
+                    if not name:
+                        inner = getattr(t.this, 'this', '')
+                        if isinstance(inner, str):
+                            name = inner
+                        elif hasattr(inner, 'name'):
+                            name = inner.name
+                if name:
+                    extracted_tables.add(str(name).lower())
+                    
+            # Also extract functions (e.g., from CROSS APPLY) which sqlglot may not classify as 'Table'
+            from sqlglot.expressions import Anonymous, Func
+            for f in ast.find_all(Anonymous, Func):
+                if hasattr(f, 'name') and f.name and f.name.lower().startswith('func_'):
+                    extracted_tables.add(f.name.lower())
+                    
+            # Hard Stop: Prevent joining functions with other tables (applies to all users)
+            if any(t.startswith('func_') for t in extracted_tables) and len(extracted_tables) > 1:
+                return (False, "AUTH_ERROR: Joins in queries using functions are prohibited, please try to ask in different way.", retry_in_tokens, retry_out_tokens)
+                
+            # Temporarily disabled role based checking
+            if True and allowed_access is not None:
                 allowed_table_names = [a['table_name'].lower() for a in allowed_access]
                 
                 # Check tables
@@ -86,8 +110,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                     raw_conn.close() # Returns the connection to the pool
                     
             # Log SUCCESS
-            update_log_sync(
-                message_id=message_id,
+            update_log_sync_by_id(
+                log_id=log_id,
                 module="validator",
                 level="INFO",
                 event_type="VALIDATION_SUCCESS",
@@ -97,12 +121,15 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
             )
             return (True, current_sql, retry_in_tokens, retry_out_tokens)
         except Exception as e:
+            print(f"\n[DEBUG VALIDATION FAILED] Exception: {e}\n")
+            with open("validation_error_log.txt", "w") as f:
+                f.write(str(e))
             if attempt < max_retries:
                 error_message = str(e)
                 retry_prompt = f"{user_query}\nThe following SQL has an error: {error_message}\nFix it and return only the corrected SQL."
                 
                 log_error_sync(
-                    message_id=message_id,
+                    log_id=log_id,
                     module="validator",
                     event_type="VALIDATION_RETRY",
                     error=e,
@@ -131,8 +158,8 @@ async def validate_and_fix_sql(sql: str, user_query: str, chat=None, max_retries
                 pass
                 
     # Log Failure
-    update_log_sync(
-        message_id=message_id,
+    update_log_sync_by_id(
+        log_id=log_id,
         module="validator",
         level="ERROR",
         event_type="VALIDATION_FAILED",

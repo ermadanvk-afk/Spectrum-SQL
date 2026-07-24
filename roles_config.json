@@ -1,158 +1,125 @@
 {
     "roles": [
-        "Purchase Manager",
-        "Warehouse Manager",
-        "Purchase Executive"
+        "store",
+        "purchase",
+        "finance",
+        "sales",
+        "stock"
     ],
     "access_mapping": [
         {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_PurchaseBillItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_PurchaseBillMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_GRNItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_GRNItemIndentDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_GrnMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_IndentItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
+            "role": "store",
             "table_name": "vw_ai_IndentMain",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_IssueItemDetail",
+            "role": "store",
+            "table_name": "vw_ai_IndentItemDetail",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
+            "role": "store",
             "table_name": "vw_ai_IssueMain",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_MaterialReturnItemDetail",
+            "role": "store",
+            "table_name": "vw_ai_IssueItemDetail",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
+            "role": "store",
             "table_name": "vw_ai_MaterialReturnMain",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
+            "role": "store",
+            "table_name": "vw_ai_MaterialReturnItemDetail",
+            "restricted_columns": []
+        },
+        {
+            "role": "store",
+            "table_name": "vw_ai_GrnMain",
+            "restricted_columns": []
+        },
+        {
+            "role": "store",
+            "table_name": "vw_ai_GRNItemDetail",
+            "restricted_columns": []
+        },
+        {
+            "role": "store",
+            "table_name": "vw_ai_GRNItemIndentDetail",
+            "restricted_columns": []
+        },
+        {
+            "role": "store",
             "table_name": "vw_ai_ItemMaster",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
+            "role": "purchase",
+            "table_name": "vw_ai_POMain",
+            "restricted_columns": []
+        },
+        {
+            "role": "purchase",
+            "table_name": "vw_ai_POItemDetail",
+            "restricted_columns": []
+        },
+        {
+            "role": "purchase",
             "table_name": "vw_ai_POIndentItemDetail",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_POItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Manager",
-            "table_name": "vw_ai_POMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Warehouse Manager",
+            "role": "purchase",
             "table_name": "vw_ai_GrnMain",
             "restricted_columns": []
         },
         {
-            "role": "Warehouse Manager",
+            "role": "purchase",
             "table_name": "vw_ai_GRNItemDetail",
             "restricted_columns": []
         },
         {
-            "role": "Warehouse Manager",
+            "role": "purchase",
             "table_name": "vw_ai_GRNItemIndentDetail",
             "restricted_columns": []
         },
         {
-            "role": "Warehouse Manager",
-            "table_name": "vw_ai_MaterialReturnItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Warehouse Manager",
-            "table_name": "vw_ai_MaterialReturnMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Warehouse Manager",
-            "table_name": "vw_ai_IssueMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Warehouse Manager",
-            "table_name": "vw_ai_IssueItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Warehouse Manager",
+            "role": "purchase",
             "table_name": "vw_ai_IndentMain",
             "restricted_columns": []
         },
         {
-            "role": "Warehouse Manager",
+            "role": "purchase",
             "table_name": "vw_ai_IndentItemDetail",
             "restricted_columns": []
         },
         {
-            "role": "Warehouse Manager",
+            "role": "purchase",
+            "table_name": "vw_ai_PurchaseBillMain",
+            "restricted_columns": []
+        },
+        {
+            "role": "purchase",
+            "table_name": "vw_ai_PurchaseBillItemDetail",
+            "restricted_columns": []
+        },
+        {
+            "role": "purchase",
             "table_name": "vw_ai_ItemMaster",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Executive",
-            "table_name": "vw_ai_ItemMaster",
+            "role": "finance",
+            "table_name": "vw_ai_PurchaseBillMain",
             "restricted_columns": []
         },
         {
-            "role": "Purchase Executive",
-            "table_name": "vw_ai_POItemDetail",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Executive",
-            "table_name": "vw_ai_POMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Executive",
-            "table_name": "vw_ai_GrnMain",
-            "restricted_columns": []
-        },
-        {
-            "role": "Purchase Executive",
-            "table_name": "vw_ai_GRNItemDetail",
+            "role": "finance",
+            "table_name": "vw_ai_PurchaseBillItemDetail",
             "restricted_columns": []
         }
     ]

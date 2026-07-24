@@ -4,7 +4,7 @@ import re
 import asyncio
 from dotenv import load_dotenv
 from retriever import fetch_tables, fetch_business_rules, fetch_sample_queries
-from logger import log_error_sync, update_log_sync
+from logger import log_error_sync, update_log_sync_by_id
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
@@ -24,13 +24,17 @@ class OpenAIChatWrapper:
     async def send_message(self, prompt):
         self.messages.append({"role": "user", "content": prompt})
         
+        print("\nRetrying payload(Validation fix)...")
+        
         response = await self.client.chat.completions.create(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite",
             messages=self.messages,
             max_tokens=4000,
             # extra_body={"reasoning": {"enabled": True}},
             temperature=0.0
         )
+        
+        print("Received retry response!")
         
         response_msg = response.choices[0].message
         
@@ -58,7 +62,7 @@ class OpenAIChatWrapper:
         
         return MockResponse(response_msg.content, in_t, out_t)
 
-async def generate_sql(user_query: str, return_response: bool = False, history: list = None, message_id: int = None) -> str:
+async def generate_sql(user_query: str, return_response: bool = False, history: list = None, log_id: int = None) -> str:
     """
     Takes a user query, retrieves relevant schema chunks, rules, and samples,
     and uses OpenRouter to construct the final SQL query.
@@ -67,15 +71,15 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         history = []
         
     tables, initial_names, final_names = fetch_tables(user_query, top_k=8)
-    rules = fetch_business_rules(user_query, top_k=10)
+    rules = fetch_business_rules(user_query, relevant_tables=final_names, top_k_general=4)
     queries = fetch_sample_queries(user_query, top_k=3)
     
     # Log the RAG retrieval details using update_log_sync
     rules_list = [r.payload.get('text', '') for r in rules]
     queries_list = [{"sql": q.payload.get('sql', ''), "desc": q.payload.get('text', '')} for q in queries]
     
-    update_log_sync(
-        message_id=message_id,
+    update_log_sync_by_id(
+        log_id=log_id,
         module="retriever",
         level="INFO",
         event_type="RAG_RETRIEVAL",
@@ -129,7 +133,9 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
             
     context_str = "\n".join(context_parts)
     
-    system_instruction_path = "systemprompt.txt"
+    import os
+    current_dir = os.path.dirname(__file__)
+    system_instruction_path = os.path.join(current_dir, "systemprompt.txt")
     try:
         with open(system_instruction_path, "r", encoding="utf-8") as f:
             system_instruction = f.read()
@@ -149,22 +155,33 @@ async def generate_sql(user_query: str, return_response: bool = False, history: 
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]
-    
-    print("\n[NVIDIA PIPELINE] 🚀 Sending payload to Laguna-XS via OpenRouter...")
-    print(f"[NVIDIA PIPELINE] ⏳ Waiting for response (this can take time for free tier)...")
+    # ------------------------ printing in console-----------------------
+    # print("\n" + "="*80)
+    # print("=== SYSTEM INSTRUCTION ===")
+    # print("="*80)
+    # print(system_instruction)
+    # print("\n" + "="*80)
+    # print("=== FINAL USER PROMPT ===")
+    # print("="*80)
+    # print(prompt)
+    # print("="*80 + "\n")
+    # ------------------------ printing in console-----------------------
+
+    print("\n[NVIDIA PIPELINE] Sending payload to Gemini Flash lite...")
+    print(f"[NVIDIA PIPELINE] Waiting for response...")
     
     try:
         response = await client.chat.completions.create(
-          model="gemini-2.5-flash",
+          model="gemini-3.1-flash-lite",
           messages=messages,
           max_tokens=4500,
         #   extra_body={"reasoning": {"enabled": True}},
           temperature=0.0
         )
-        print("[NVIDIA PIPELINE] ✅ Received response from Laguna!")
+        print("[NVIDIA PIPELINE] Received response from gemini!")
     except Exception as e:
-        print(f"[NVIDIA PIPELINE] ❌ Error from OpenRouter: {e}")
-        log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling OpenRouter LLM", message_id=message_id)
+        print(f"[NVIDIA PIPELINE] Error from Gemini: {e}")
+        log_error_sync("sql_gen", "LLM_GENERATION_ERROR", e, "Error calling gemini LLM", message_id=message_id)
         raise e
     
     response_msg = response.choices[0].message
@@ -225,7 +242,9 @@ if __name__ == "__main__":
             sql, resp, chat, full_prompt = await generate_sql(query, return_response=True)
             print(sql)
             # Log via db instead of file
-            update_log_sync(
+            from logger import update_log_sync_by_id
+            update_log_sync_by_id(
+                log_id=999,
                 module="sql_gen_test",
                 level="INFO",
                 event_type="TEST_SUCCESS",

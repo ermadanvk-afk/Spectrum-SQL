@@ -1,21 +1,23 @@
 import pandas as pd
 import uuid
 
-def build_table_chunks(df: pd.DataFrame) -> list[dict]:
+def build_table_chunks(df: pd.DataFrame, rules_df: pd.DataFrame = None) -> list[dict]:
     """
     Input:
         df — dataframe with columns:
              schema_name, table_name, column_name, data_type,
              is_primary_key, is_foreign_key,
              referenced_schema, referenced_table, referenced_column,
-             description, keyword
+             Business Entity, purpose, supports, does not supports
+        rules_df — optional Business Rules dataframe to extract table-specific rules.
 
     Output:
         list of chunk dicts, one per table:
         {
             "chunk_id"  : "schema.table",
             "chunk_type": "table",
-            "content"   : <formatted string to embed>
+            "embedding_text": <rich text for Qdrant embedding>,
+            "llm_text": <clean schema string for LLM>
         }
     """
 
@@ -26,37 +28,97 @@ def build_table_chunks(df: pd.DataFrame) -> list[dict]:
 
     for (schema, table), group in grouped:
 
-        full_name   = f"{schema}.{table}"
-        description = group["description"].iloc[0] if "description" in group.columns else ""
-        keywords    = group["keyword"].iloc[0] if "keyword" in group.columns else ""
+        full_name = f"{schema}.{table}"
+        
+        first_row = group.iloc[0]
+        business_entity = first_row.get("Business Entity", "")
+        purpose = first_row.get("purpose", "")
+        supports = first_row.get("supports", "")
+        does_not_support = first_row.get("does not supports", "")
 
-        # ── columns ──────────────────────────────────────────────
-        col_lines = []
+        # ── columns and relationships ──────────────────────────────────────────────
+        embed_col_lines = []
+        llm_col_lines = []
+        rel_lines = []
         for _, row in group.iterrows():
             flags = []
             if row.get("is_primary_key") == 1:
                 flags.append("PK")
+            flag_str = f", {', '.join(flags)}" if flags else ""
+            
+            # Embedding text (no data type)
+            embed_col_lines.append(f"- {row['column_name']} ({flag_str.strip(', ')})")
+            
+            # LLM text (with data type)
+            llm_col_lines.append(f"- {row['column_name']} ({row['data_type']}{flag_str})")
+            
             if row.get("is_foreign_key") == 1:
                 ref = f"{row['referenced_schema']}.{row['referenced_table']}.{row['referenced_column']}"
-                flags.append(f"FK -> {ref}")
-            flag_str = f", {', '.join(flags)}" if flags else ""
-            col_lines.append(f"- {row['column_name']} ({row['data_type']}{flag_str})")
+                rel_lines.append(f"- {row['column_name']} -> {ref}")
 
-        # ── assemble chunk content ────────────────────────────────
-        content_lines = [f"## Table: {full_name}"]
+        # ── assemble llm text ────────────────────────────────
+        llm_content_lines = [
+            f"table_name : {table}",
+            f"schema_name : {schema}",
+        ]
         
-        if pd.notna(description) and str(description).strip() and str(description).strip() != "nan":
-            content_lines.append(f"-- Description: {str(description).strip()}")
+        if pd.notna(purpose) and str(purpose).strip() and str(purpose).strip() != "nan":
+            llm_content_lines.append(f"purpose : {str(purpose).strip()}")
             
-        content_lines.extend(col_lines)
+        llm_content_lines.append("columns :")
+        llm_content_lines.extend(llm_col_lines)
+        
+        if rel_lines:
+            llm_content_lines.append("relationships :")
+            llm_content_lines.extend(rel_lines)
+            
+        llm_content = "\n".join(llm_content_lines)
 
-        content = "\n".join(content_lines)
+        # ── assemble embedding text ────────────────────────────────
+        embed_content_lines = [
+            f"table_name : {table}",
+            f"schema_name : {schema}",
+        ]
+        
+        if pd.notna(business_entity) and str(business_entity).strip() and str(business_entity).strip() != "nan":
+            embed_content_lines.append(f"Business Entity : {str(business_entity).strip()}")
+        if pd.notna(purpose) and str(purpose).strip() and str(purpose).strip() != "nan":
+            embed_content_lines.append(f"purpose : {str(purpose).strip()}")
+        if pd.notna(supports) and str(supports).strip() and str(supports).strip() != "nan":
+            embed_content_lines.append(f"supports : {str(supports).strip()}")
+        if pd.notna(does_not_support) and str(does_not_support).strip() and str(does_not_support).strip() != "nan":
+            embed_content_lines.append(f"does not supports : {str(does_not_support).strip()}")
+            
+        embed_content_lines.append("columns :")
+        embed_content_lines.extend(embed_col_lines)
+        
+        if rel_lines:
+            embed_content_lines.append("relationships :")
+            embed_content_lines.extend(rel_lines)
+
+        # Append specific rules from rules_df
+        if rules_df is not None:
+            # Filter where category == bare table name (case insensitive)
+            table_rules = rules_df[
+                (rules_df['category'].notna()) & 
+                (rules_df['category'].astype(str).str.strip().str.lower() == str(table).strip().lower())
+            ]
+            if not table_rules.empty:
+                embed_content_lines.append("Business Rules :")
+                for _, rule_row in table_rules.iterrows():
+                    rule_text = str(rule_row.get("Business Rules", "")).strip()
+                    if rule_text and rule_text.lower() != "nan":
+                        embed_content_lines.append(f"- {rule_text}")
+
+        embed_content = "\n".join(embed_content_lines)
 
         chunks.append({
             "chunk_id"  : str(uuid.uuid5(uuid.NAMESPACE_DNS, full_name)),
             "original_id": full_name,
             "chunk_type": "table",
-            "content"   : content
+            "content": embed_content,
+            "embedding_text": embed_content,
+            "llm_text": llm_content
         })
 
     return chunks
@@ -66,14 +128,15 @@ def build_business_rule_chunks(df: pd.DataFrame) -> list[dict]:
     """
     Input:
         df — dataframe with column:
-             Business Rules
+             Business Rules, category
 
     Output:
         list of chunk dicts, one per rule:
         {
             "chunk_id"  : "rule_<index>",
             "chunk_type": "business_rule",
-            "content"   : <rule text to embed>
+            "content"   : <rule text to embed>,
+            "category"  : <category for filtering>
         }
     """
     chunks = []
@@ -82,6 +145,7 @@ def build_business_rule_chunks(df: pd.DataFrame) -> list[dict]:
         if "Business Rules" not in row:
             continue
         rule = str(row["Business Rules"]).strip()
+        category = str(row.get("category", "")).strip()
 
         # skip empty rows
         if not rule or rule.lower() == "nan":
@@ -92,7 +156,8 @@ def build_business_rule_chunks(df: pd.DataFrame) -> list[dict]:
             "chunk_id"  : str(uuid.uuid5(uuid.NAMESPACE_DNS, rule_id)),
             "original_id": rule_id,
             "chunk_type": "business_rule",
-            "content"   : rule
+            "content"   : rule,
+            "category"  : category
         })
 
     return chunks
@@ -153,7 +218,11 @@ if __name__ == "__main__":
         "referenced_table": [None, "vendor", None],
         "referenced_column": [None, "id", None],
         "description": ["Main purchase order records", "Main purchase order records", "Tax details"],
-        "keyword": ["purchase, vendor, order", "purchase, vendor, order", "tax, expense"]
+        "keyword": ["purchase, vendor, order", "purchase, vendor, order", "tax, expense"],
+        "Business Entity": ["Purchase Order", "Purchase Order", "Tax"],
+        "purpose": ["Store main PO info", "Store main PO info", "Store tax info"],
+        "supports": ["Reporting, Invoicing", "Reporting, Invoicing", "Accounting"],
+        "does not supports": ["Analytics", "Analytics", "Payroll"]
     }
     
     test_df = pd.DataFrame(data)

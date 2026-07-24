@@ -1,7 +1,7 @@
 import json
 import traceback
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -38,6 +38,10 @@ class SystemLog(Base):
     execution_status = Column(String, nullable=True)
     error_details = Column(Text, nullable=True)
 
+    # User Feedback
+    is_useful = Column(Boolean, nullable=True)
+    user_comment = Column(String(500), nullable=True)
+
 # Ensure the table is created immediately
 Base.metadata.create_all(bind=engine)
 
@@ -58,10 +62,13 @@ def create_log_sync(session_id: str, message_id: int, user_query: str):
         with SessionLocal() as db:
             db.add(log_entry)
             db.commit()
+            db.refresh(log_entry)
+            return log_entry.id
     except Exception as e:
         print(f"Failed to create log in DB: {e}")
+        return None
 
-def update_log_sync(message_id: int, **kwargs):
+def update_log_sync(message_id: int, new_message_id: int = None, **kwargs):
     """
     Synchronously update an existing log entry by message_id.
     """
@@ -70,11 +77,14 @@ def update_log_sync(message_id: int, **kwargs):
         
     try:
         with SessionLocal() as db:
-            log_entry = db.query(SystemLog).filter(SystemLog.message_id == message_id).first()
+            log_entry = db.query(SystemLog).filter(SystemLog.message_id == message_id).order_by(SystemLog.id.desc()).first()
             if not log_entry:
                 # If we couldn't find the original row (maybe testing manually), create one on the fly
                 log_entry = SystemLog(message_id=message_id)
                 db.add(log_entry)
+                
+            if new_message_id:
+                log_entry.message_id = new_message_id
                 
             # Automatically serialize any dicts/lists to JSON strings
             for key, value in kwargs.items():
@@ -87,7 +97,33 @@ def update_log_sync(message_id: int, **kwargs):
     except Exception as e:
         print(f"Failed to update log in DB: {e}")
 
-def log_error_sync(module: str, event_type: str, error: Exception, message: str = "An error occurred", session_id: str = None, message_id: int = None, details: dict = None):
+def update_log_sync_by_id(log_id: int, new_message_id: int = None, **kwargs):
+    """
+    Synchronously update an existing log entry directly by its primary key (system_logs.id).
+    """
+    if not log_id:
+        return
+        
+    try:
+        with SessionLocal() as db:
+            log_entry = db.query(SystemLog).filter(SystemLog.id == log_id).first()
+            if not log_entry:
+                return
+                
+            if new_message_id:
+                log_entry.message_id = new_message_id
+                
+            for key, value in kwargs.items():
+                if hasattr(log_entry, key):
+                    if isinstance(value, (dict, list)):
+                        setattr(log_entry, key, json.dumps(value, default=str))
+                    else:
+                        setattr(log_entry, key, value)
+            db.commit()
+    except Exception as e:
+        print(f"Failed to update log by ID in DB: {e}")
+
+def log_error_sync(module: str, event_type: str, error: Exception, message: str = "An error occurred", session_id: str = None, message_id: int = None, log_id: int = None, details: dict = None):
     """
     Helper to easily append errors with tracebacks to the log.
     """
@@ -98,12 +134,23 @@ def log_error_sync(module: str, event_type: str, error: Exception, message: str 
     }
     if details:
         error_info.update(details)
-        
-    update_log_sync(
-        message_id=message_id,
-        module=module,
-        level="ERROR",
-        event_type=event_type,
-        message=message,
-        error_details=error_info
-    )
+    
+    # Prefer log_id (system_logs PK) if available; fall back to message_id
+    if log_id:
+        update_log_sync_by_id(
+            log_id=log_id,
+            module=module,
+            level="ERROR",
+            event_type=event_type,
+            message=message,
+            error_details=error_info
+        )
+    elif message_id:
+        update_log_sync(
+            message_id=message_id,
+            module=module,
+            level="ERROR",
+            event_type=event_type,
+            message=message,
+            error_details=error_info
+        )

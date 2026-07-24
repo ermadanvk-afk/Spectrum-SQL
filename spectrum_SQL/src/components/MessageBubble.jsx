@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Loader2, Database } from 'lucide-react';
+import { CheckCircle2, Loader2, Database, ThumbsUp, ThumbsDown } from 'lucide-react';
 import SQLViewer from './SQLViewer';
 import DataTable from './DataTable';
 import AnalysisPanel from './AnalysisPanel';
@@ -55,8 +55,48 @@ function LoadingSteps() {
   );
 }
 
-export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete }) {
+export default function MessageBubble({ message, onAnalysisComplete, onVisualAnalysisComplete, onUpdateMessage, showCost, showSql, allowedDatabases = [] }) {
   const isUser = message.role === 'user';
+  
+  const [commentText, setCommentText] = useState(message.user_comment || '');
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleFeedback = async (isUseful) => {
+    if (isSubmitting) return;
+    if (onUpdateMessage) onUpdateMessage({ is_useful: isUseful });
+    
+    try {
+      setIsSubmitting(true);
+      await fetch(`/api/messages/${message.id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_useful: isUseful })
+      });
+    } catch (e) {
+      console.error("Failed to submit feedback", e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const submitComment = async () => {
+    if (isSubmitting || !commentText.trim()) return;
+    if (onUpdateMessage) onUpdateMessage({ user_comment: commentText });
+
+    try {
+      setIsSubmitting(true);
+      await fetch(`/api/messages/${message.id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_comment: commentText })
+      });
+    } catch (e) {
+      console.error("Failed to submit comment", e);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (message.type === 'loading') {
     return (
@@ -79,15 +119,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
     );
   }
 
-  if (message.type === 'error') {
-    return (
-      <div className="message assistant">
-        <div className="message-bubble glass-panel" style={{ borderLeft: '4px solid #ef4444' }}>
-          <span style={{ color: '#ef4444' }}>{message.content}</span>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className={`message ${isUser ? 'user' : 'assistant'}`}>
@@ -95,6 +127,13 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
 
         {/* User message text */}
         {isUser && <div>{message.content}</div>}
+
+        {/* Assistant error response */}
+        {!isUser && message.type === 'error' && (
+          <div style={{ color: 'var(--text-main)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '16px' }}>
+            {message.content}
+          </div>
+        )}
 
         {/* Assistant success response */}
         {!isUser && message.type === 'success' && (
@@ -116,7 +155,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                 </div>
               )}
 
-              {message.sql && (
+              {message.sql && showSql && (
                 <SQLViewer sql={message.sql} originalSql={message.original_sql} />
               )}
 
@@ -135,7 +174,7 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                 />
               )}
 
-              {message.cost && (
+              {message.cost && showCost && (
                 <div className="cost-metrics">
                   <div className="metric-card">
                     <div className="metric-label">Input Tokens</div>
@@ -151,6 +190,10 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                   </div>
                 </div>
               )}
+
+              {
+                //component 
+              }
             </div>
 
             {(message.analysisEnabled || message.analysis) && message.data && message.data.length > 0 && (
@@ -163,6 +206,89 @@ export default function MessageBubble({ message, onAnalysisComplete, onVisualAna
                   onComplete={onAnalysisComplete}
                   isHistorical={message.isHistorical}
                 />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Feedback Widget */}
+        {!isUser && (message.type === 'success' || message.type === 'error') && (
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Is the Response useful?</span>
+                <button 
+                  onClick={() => handleFeedback(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === true ? '#34d399' : 'rgba(255,255,255,0.4)' }}
+                  title="Thumbs Up"
+                >
+                  <ThumbsUp size={16} />
+                </button>
+                <button 
+                  onClick={() => handleFeedback(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: message.is_useful === false ? '#ef4444' : 'rgba(255,255,255,0.4)' }}
+                  title="Thumbs Down"
+                >
+                  <ThumbsDown size={16} />
+                </button>
+                <button
+                  onClick={() => setShowCommentInput(!showCommentInput)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: showCommentInput ? 'var(--accent)' : 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}
+                >
+                  Comment
+                </button>
+              </div>
+              {message.db_id && (
+                <div style={{ fontSize: '0.85rem', color: '#8c8787ff', fontStyle: 'italic', display: 'flex', alignItems: 'center' }}>
+                  <span style={{opacity: 0.7}}>from {allowedDatabases.find(d => d.id === message.db_id)?.name || 'Unknown Database'}</span>
+                </div>
+              )}
+            </div>
+            
+            {showCommentInput && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <textarea
+                    value={commentText}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 500) {
+                        setCommentText(e.target.value);
+                      }
+                    }}
+                    placeholder="Provide additional feedback..."
+                    style={{
+                      width: '100%',
+                      background: 'rgba(0,0,0,0.2)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '6px',
+                      padding: '8px',
+                      color: 'white',
+                      fontSize: '0.85rem',
+                      minHeight: '60px',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', textAlign: 'right', marginTop: '4px' }}>
+                    {commentText.length}/500
+                  </div>
+                </div>
+                <button 
+                  onClick={submitComment}
+                  disabled={isSubmitting || !commentText.trim() || commentText === message.user_comment}
+                  style={{
+                    background: 'var(--accent)',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '8px 16px',
+                    color: 'white',
+                    cursor: (isSubmitting || !commentText.trim() || commentText === message.user_comment) ? 'not-allowed' : 'pointer',
+                    opacity: (isSubmitting || !commentText.trim() || commentText === message.user_comment) ? 0.5 : 1,
+                    marginBottom: '20px'
+                  }}
+                >
+                  Submit
+                </button>
               </div>
             )}
           </div>

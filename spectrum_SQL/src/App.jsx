@@ -1,17 +1,26 @@
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut, Shield } from 'lucide-react'
+import { Sparkles, MessageSquare, Plus, PanelLeft, PanelLeftClose, Trash2, LogOut, Shield, Settings, UserPlus, X } from 'lucide-react'
 import MessageBubble from './components/MessageBubble'
 import ChatInput from './components/ChatInput'
 import Auth from './components/Auth'
-
+import AdminSettingsModal from './components/AdminSettingsModal'
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || null)
-  const [userRole, setUserRole] = useState(localStorage.getItem('userRole') || null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [userRoles, setUserRoles] = useState([])
+  const [userName, setUserName] = useState(null)
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAnalysisEnabled, setIsAnalysisEnabled] = useState(false)
   const [isVisualAnalysisEnabled, setIsVisualAnalysisEnabled] = useState(false)
+  const [sessionExpiredModal, setSessionExpiredModal] = useState(false)
+
+  const [userPermissions, setUserPermissions] = useState({ display_token: false, display_sql: false, user_type: 2 })
+  const [adminModalOpen, setAdminModalOpen] = useState(false)
+  const [allowedDatabases, setAllowedDatabases] = useState([]);
+  const [selectedDbId, setSelectedDbId] = useState(null);
+  const [isDbDropdownOpen, setIsDbDropdownOpen] = useState(false);
 
   // Chat History State
   const [allChats, setAllChats] = useState([])
@@ -20,52 +29,128 @@ function App() {
   const scrollRef = useRef(null)
   const abortControllerRef = useRef(null)
   const isSwitchingChatRef = useRef(false)
+  const dbDropdownRef = useRef(null)
 
-  // Clear session state and redirect to login
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userRole')
-    setToken(null)
-    setUserRole(null)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dbDropdownRef.current && !dbDropdownRef.current.contains(event.target)) {
+        setIsDbDropdownOpen(false)
+      }
+    }
+    if (isDbDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [isDbDropdownOpen])
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch (e) {
+      console.error('Logout failed', e)
+    }
+    setIsAuthenticated(false)
+    setUserRoles([])
+    setUserName(null)
     setMessages([])
     setAllChats([])
     setCurrentChatId(null)
+    setIsAnalysisEnabled(false)
+    setIsVisualAnalysisEnabled(false)
   }
 
-  // Handle successful login
-  const handleLoginSuccess = (newToken, role) => {
-    localStorage.setItem('token', newToken)
-    if (role) localStorage.setItem('userRole', role)
-    setToken(newToken)
-    setUserRole(role || null)
+  const handleLoginSuccess = (tokenOrRole, possibleRoles, perms, username, databases) => {
+    const roles = possibleRoles || tokenOrRole // Handle old and new Auth.jsx signatures
+    setIsAuthenticated(true)
+    setUserRoles(roles || [])
+    if (perms) {
+      setUserPermissions(perms)
+    }
+    if (username) {
+      setUserName(username)
+    }
+    if (databases) {
+      setAllowedDatabases(databases);
+      if (databases.length > 0) setSelectedDbId(databases[0].id);
+    }
   }
 
-  // Custom fetch wrapper that automatically appends the JWT bearer token to headers
   const apiFetch = async (url, options = {}) => {
-    const headers = {
-      ...(options.headers || {}),
-    }
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
-    }
-
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...options,
-      headers
+      credentials: 'include'
     })
 
-    // If unauthorized, log out immediately
-    if (response.status === 401) {
-      handleLogout()
-      throw new Error("Session expired. Please log in again.")
+    if (response.status === 401 && url !== '/api/auth/me' && url !== '/api/auth/login' && url !== '/api/auth/logout' && url !== '/api/auth/refresh') {
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (refreshResponse.ok) {
+          response = await fetch(url, {
+            ...options,
+            credentials: 'include'
+          })
+
+          if (response.ok) {
+            return response
+          }
+        }
+      } catch (e) {
+        console.error("Silent refresh failed", e)
+      }
+
+      window.dispatchEvent(new Event('sessionExpired'))
+      throw new Error("SESSION_EXPIRED")
     }
 
     return response
   }
 
+  useEffect(() => {
+    const handleSessionExpired = () => setSessionExpiredModal(true)
+    window.addEventListener('sessionExpired', handleSessionExpired)
+    return () => window.removeEventListener('sessionExpired', handleSessionExpired)
+  }, [])
+
   // Fetch all sessions on mount or when token changes
   useEffect(() => {
-    if (!token) return
+    const checkAuth = async () => {
+      try {
+        const response = await apiFetch('/api/auth/me')
+        if (response.ok) {
+          const data = await response.json()
+          setIsAuthenticated(true)
+          setUserRoles(data.roles || [])
+          setUserName(data.username || null)
+          setUserPermissions({
+            display_token: data.display_token,
+            display_sql: data.display_sql,
+            user_type: data.user_type
+          })
+          if (data.allowed_databases) {
+            setAllowedDatabases(data.allowed_databases);
+            if (data.allowed_databases.length > 0) setSelectedDbId(data.allowed_databases[0].id);
+          }
+        } else {
+          setIsAuthenticated(false)
+        }
+      } catch (error) {
+        console.error("Failed to fetch user info", error)
+        setIsAuthenticated(false)
+      } finally {
+        setIsCheckingAuth(false)
+      }
+    }
+    checkAuth()
+  }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
     const fetchSessions = async () => {
       try {
         const response = await apiFetch('/api/sessions')
@@ -78,35 +163,14 @@ function App() {
       }
     }
     fetchSessions()
-  }, [token])
-
-  // Fetch user role on page reload when token exists but role is not stored
-  useEffect(() => {
-    if (!token) return
-    if (userRole) return // already have it
-    const fetchUserInfo = async () => {
-      try {
-        const response = await apiFetch('/api/auth/me')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.role) {
-            setUserRole(data.role)
-            localStorage.setItem('userRole', data.role)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch user info", error)
-      }
-    }
-    fetchUserInfo()
-  }, [token])
+  }, [isAuthenticated])
 
   // Auto scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages.length, isLoading, currentChatId])
 
   const handleSend = async (query) => {
     // Add user message to UI
@@ -132,7 +196,7 @@ function App() {
       }
     } else {
       // Update title of existing chat if it's "New Chat"
-      setAllChats(prev => prev.map(c => 
+      setAllChats(prev => prev.map(c =>
         c.id === sessionId && c.title === "New Chat" ? { ...c, title: query } : c
       ));
     }
@@ -148,7 +212,8 @@ function App() {
         },
         body: JSON.stringify({
           query: query,
-          session_id: sessionId
+          session_id: sessionId,
+          db_id: selectedDbId
         }),
         signal: controller.signal
       })
@@ -161,7 +226,12 @@ function App() {
         newMsgs.pop() // remove loading
 
         if (!response.ok) {
-          let errorContent = data.detail || "An error occurred while generating the response.";
+          let errorContent = "An error occurred while generating the response.";
+          if (typeof data.detail === 'string') {
+            errorContent = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errorContent = data.detail.map(e => e.msg).join(', ');
+          }
           const lowerError = errorContent.toLowerCase();
           if (lowerError.includes('timeout') || lowerError.includes('hyt00')) {
             errorContent = "The query took longer than the 45-second limit and was stopped. Please try a more specific question, or ask for a narrower time range.";
@@ -209,16 +279,18 @@ function App() {
           })
         }
       } else {
-        setMessages(prev => {
-          const newMsgs = [...prev]
-          newMsgs.pop() // remove loading
-          newMsgs.push({
-            role: 'assistant',
-            type: 'error',
-            content: error.message || "Failed to connect to the backend server. Is it running?"
+        if (error.message !== "SESSION_EXPIRED") {
+          setMessages(prev => {
+            const newMsgs = [...prev]
+            newMsgs.pop() // remove loading
+            newMsgs.push({
+              role: 'assistant',
+              type: 'error',
+              content: error.message || "Failed to connect to the backend server. Is it running?"
+            })
+            return newMsgs
           })
-          return newMsgs
-        })
+        }
       }
     } finally {
       setIsLoading(false)
@@ -234,21 +306,40 @@ function App() {
     }
   }
 
+  const handleUpdateMessage = (messageId, updates) => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId ? { ...msg, ...updates } : msg
+    ));
+  };
+
   const handleAnalysisComplete = async (index, analysisData, messageId) => {
+    let updatedCost = null;
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
-        newMsgs[index] = { ...newMsgs[index], analysis: analysisData };
+        const currentCost = newMsgs[index].cost;
+        if (currentCost && analysisData.cost) {
+          updatedCost = {
+            input_tokens: currentCost.input_tokens + analysisData.cost.input_tokens,
+            output_tokens: currentCost.output_tokens + analysisData.cost.output_tokens,
+            cost_inr: currentCost.cost_inr + analysisData.cost.cost_inr
+          };
+          newMsgs[index] = { ...newMsgs[index], analysis: analysisData, cost: updatedCost };
+        } else {
+          newMsgs[index] = { ...newMsgs[index], analysis: analysisData };
+        }
       }
       return newMsgs;
     });
 
     if (messageId) {
       try {
+        const body = { analysis: analysisData };
+        if (analysisData.cost) body.cost = analysisData.cost;
         await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ analysis: analysisData })
+          body: JSON.stringify(body)
         });
       } catch (e) {
         console.error("Failed to save analysis to backend", e);
@@ -257,20 +348,33 @@ function App() {
   }
 
   const handleVisualAnalysisComplete = async (index, specData, messageId) => {
+    let updatedCost = null;
     setMessages(prev => {
       const newMsgs = [...prev];
       if (newMsgs[index]) {
-        newMsgs[index] = { ...newMsgs[index], visual_spec: specData };
+        const currentCost = newMsgs[index].cost;
+        if (currentCost && specData.cost) {
+          updatedCost = {
+            input_tokens: currentCost.input_tokens + specData.cost.input_tokens,
+            output_tokens: currentCost.output_tokens + specData.cost.output_tokens,
+            cost_inr: currentCost.cost_inr + specData.cost.cost_inr
+          };
+          newMsgs[index] = { ...newMsgs[index], visual_spec: specData, cost: updatedCost };
+        } else {
+          newMsgs[index] = { ...newMsgs[index], visual_spec: specData };
+        }
       }
       return newMsgs;
     });
 
     if (messageId) {
       try {
+        const body = { visual_spec: specData };
+        if (specData.cost) body.cost = specData.cost;
         await apiFetch(`/api/messages/${messageId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visual_spec: specData })
+          body: JSON.stringify(body)
         });
       } catch (e) {
         console.error("Failed to save visual spec to backend", e);
@@ -290,8 +394,12 @@ function App() {
     isSwitchingChatRef.current = true;
     handleStop(); // Abort any ongoing request
     setCurrentChatId(chatId);
-    setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
     
+    const chat = allChats.find(c => c.id === chatId);
+    // Removed automatic database switching on chat reload
+
+    setMessages([{ role: 'assistant', type: 'loading_history' }]); // temporary loading state
+
     try {
       const response = await apiFetch(`/api/sessions/${chatId}/messages`);
       if (response.ok) {
@@ -322,13 +430,81 @@ function App() {
     }
   }
 
+  if (isCheckingAuth) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#111', color: '#d97757' }}>
+        Loading...
+      </div>
+    )
+  }
+
   // If not logged in, show the Auth screen
-  if (!token) {
+  if (!isAuthenticated) {
     return <Auth onLoginSuccess={handleLoginSuccess} />
   }
 
   return (
     <div className="claude-layout">
+      {sessionExpiredModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#1e1e1e',
+            padding: '32px',
+            borderRadius: '12px',
+            border: '1px solid #333',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            maxWidth: '400px',
+            textAlign: 'center'
+          }}>
+            <Shield size={48} style={{ color: '#d97757' }} />
+            <h2 style={{ color: '#eee', margin: 0, fontWeight: 600 }}>Session Expired</h2>
+            <p style={{ color: '#aaa', margin: 0, fontSize: '0.95rem' }}>Hey, your session is expired. Kindly login again.</p>
+            <button
+              onClick={() => {
+                setSessionExpiredModal(false)
+                handleLogout()
+              }}
+              style={{
+                marginTop: '8px',
+                backgroundColor: '#d97757',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                width: '100%',
+                transition: 'opacity 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.opacity = 0.9}
+              onMouseOut={(e) => e.target.style.opacity = 1}
+            >
+              Login Again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Settings Modal */}
+      {adminModalOpen && (
+        <AdminSettingsModal
+          onClose={() => setAdminModalOpen(false)}
+          apiFetch={apiFetch}
+        />
+      )}
+
       {/* Sidebar */}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between' }}>
@@ -347,35 +523,43 @@ function App() {
         </div>
 
         {/* Role Badge */}
-        {userRole && (
+        {userRoles && userRoles.length > 0 && (
           <div className="sidebar-item" style={{
             marginTop: '8px',
             padding: '8px 16px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: '6px',
             cursor: 'default'
           }}>
-            <Shield size={16} style={{ color: '#d97757', flexShrink: 0 }} />
-            <span className="sidebar-text" style={{
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: '#d97757',
-              backgroundColor: 'rgba(217, 119, 87, 0.1)',
-              padding: '4px 12px',
-              borderRadius: '12px',
-              border: '1px solid rgba(217, 119, 87, 0.25)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {userRole}
-            </span>
+            {userName && (
+              <span className="sidebar-text" style={{ fontSize: '0.9rem', color: '#eee', fontWeight: 600, paddingLeft: '4px' }}>
+                Hi, {userName}!
+              </span>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Shield size={16} style={{ color: '#d97757', flexShrink: 0 }} />
+              <span className="sidebar-text" style={{
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: '#d97757',
+                backgroundColor: 'rgba(217, 119, 87, 0.1)',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                border: '1px solid rgba(217, 119, 87, 0.25)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}>
+                {userRoles.join(', ')}
+              </span>
+            </div>
           </div>
         )}
 
 
-        <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="sidebar-item" style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Auto-Analysis</span>
           <label className="switch">
             <input
@@ -387,7 +571,7 @@ function App() {
           </label>
         </div>
 
-        <div className="sidebar-item" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="sidebar-item" style={{ marginTop: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="sidebar-text" style={{ fontSize: '0.9rem' }}>Visual Analysis</span>
           <label className="switch">
             <input
@@ -401,14 +585,14 @@ function App() {
 
         <div
           className="sidebar-item"
-          style={{ marginTop: '16px' }}
+          style={{ marginTop: '5px' }}
           onClick={createNewChat}
         >
           <Plus size={18} className="sidebar-icon" />
           <span className="sidebar-text">New chat</span>
         </div>
 
-        <div className="sidebar-item" style={{ cursor: 'default', color: 'var(--text-main)', opacity: 0.5, marginTop: '16px' }}>
+        <div className="sidebar-item" style={{ cursor: 'default', color: 'var(--text-main)', opacity: 0.5, marginTop: '5px' }}>
           <MessageSquare size={18} className="sidebar-icon" />
           <span className="sidebar-text" style={{ fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase' }}>Recent Chats</span>
         </div>
@@ -447,13 +631,29 @@ function App() {
           ))}
         </div>
 
+        {userPermissions.user_type === 1 && (
+          <div
+            className="sidebar-item"
+            style={{
+              marginTop: 'auto',
+              borderTop: '1px solid var(--border-light)',
+              paddingTop: '16px',
+              color: '#a3a3a3'
+            }}
+            onClick={() => setAdminModalOpen(true)}
+          >
+            <Settings size={18} className="sidebar-icon" />
+            <span className="sidebar-text">Settings</span>
+          </div>
+        )}
+
         {/* Logout Button */}
         <div
           className="sidebar-item"
           style={{
-            marginTop: 'auto',
-            borderTop: '1px solid var(--border-light)',
-            paddingTop: '16px',
+            marginTop: userPermissions.user_type === 1 ? '8px' : 'auto',
+            borderTop: userPermissions.user_type === 1 ? 'none' : '1px solid var(--border-light)',
+            paddingTop: userPermissions.user_type === 1 ? '0px' : '16px',
             color: '#ef4444'
           }}
           onClick={handleLogout}
@@ -464,7 +664,68 @@ function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content" style={{ position: 'relative' }}>
+        {isAuthenticated && allowedDatabases.length > 0 && (
+          <div ref={dbDropdownRef} style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 100 }}>
+            <div 
+              style={{ 
+                backgroundColor: 'rgba(30, 30, 30, 0.8)', 
+                backdropFilter: 'blur(8px)',
+                border: '1px solid #333', 
+                borderRadius: '20px', 
+                padding: '8px 16px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                cursor: allowedDatabases.length > 1 ? 'pointer' : 'default',
+                position: 'relative'
+              }}
+              onClick={() => allowedDatabases.length > 1 && setIsDbDropdownOpen(!isDbDropdownOpen)}
+            >
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }}></div>
+              <span style={{ color: '#eee', fontSize: '0.85rem', fontWeight: 600 }}>
+                {allowedDatabases.find(db => db.id === selectedDbId)?.name || 'Default Database'}
+              </span>
+              
+              {isDbDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '110%',
+                  right: 0,
+                  backgroundColor: '#1e1e1e',
+                  border: '1px solid #333',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  minWidth: '200px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                }}>
+                  {allowedDatabases.map(db => (
+                    <div 
+                      key={db.id}
+                      style={{
+                        padding: '10px 16px',
+                        color: db.id === selectedDbId ? '#d97757' : '#ccc',
+                        backgroundColor: db.id === selectedDbId ? 'rgba(217, 119, 87, 0.1)' : 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                      onClick={() => {
+                        if (db.id !== selectedDbId) {
+                          setSelectedDbId(db.id);
+                          //  setMessages([]);
+                          //  setCurrentChatId(null);
+                        }
+                        setIsDbDropdownOpen(false);
+                      }}
+                    >
+                      {db.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         <div className="chat-container" ref={scrollRef}>
           {messages.length === 0 ? (
             <div className="claude-greeting">
@@ -472,18 +733,34 @@ function App() {
               Type, discover, go.
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <MessageBubble
-                key={idx}
-                message={msg}
-                onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
-                onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
-              />
-            ))
+            <>
+              {messages.map((msg, idx) => (
+                <MessageBubble
+                  key={idx}
+                  message={msg}
+                  showCost={userPermissions.display_token}
+                  showSql={userPermissions.display_sql}
+                  allowedDatabases={allowedDatabases}
+                  onAnalysisComplete={(data) => handleAnalysisComplete(idx, data, msg.id)}
+                  onVisualAnalysisComplete={(spec) => handleVisualAnalysisComplete(idx, spec, msg.id)}
+                  onUpdateMessage={(updates) => handleUpdateMessage(msg.id, updates)}
+                />
+              ))}
+              {messages.filter(m => m.role === 'user').length >= 10 && (
+                <div style={{ padding: '2px 0', color: '#ef4444', textAlign: 'center', width: '100%', fontWeight: '500', fontSize: '0.9rem' }}>
+                  Maximum limit of 10 questions reached. Please switch to a new chat.
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        <ChatInput onSend={handleSend} onStop={handleStop} isLoading={isLoading} />
+        <ChatInput
+          onSend={handleSend}
+          onStop={handleStop}
+          isLoading={isLoading}
+          isLimitReached={messages.filter(m => m.role === 'user').length >= 10}
+        />
       </main>
     </div>
   )
